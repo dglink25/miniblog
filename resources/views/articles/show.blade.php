@@ -1,0 +1,65 @@
+
+@extends('layouts.app')
+
+@section('content')
+<article class="mb-4">
+  <h1 class="mb-2">{{ $article->title }}</h1>
+  <div class="text-muted mb-3">
+    Par <strong>{{ $article->user->name }}</strong>
+    • publié {{ $article->created_at->diffForHumans() }}
+    @if($article->updated_at->gt($article->created_at))
+      • modifié {{ $article->updated_at->diffForHumans() }}
+    @endif
+  </div>
+
+  <img src="{{ asset('storage/'.$article->image_path) }}" class="img-fluid rounded mb-3" alt="Image article {{ $article->title }}">
+
+  <div class="fs-5 mb-3">{!! nl2br(e($article->content)) !!}</div>
+
+    @foreach ($article->media as $m)
+    @if ($m->isImage())
+        <img src="{{ asset('storage/'.$m->file_path) }}" class="img-fluid mb-3">
+    @elseif ($m->isVideo())
+        <video controls class="img-fluid mb-3" src="{{ asset('storage/'.$m->file_path) }}"></video>
+    @endif
+    @endforeach
+
+  @can('update', $article)
+    <a href="{{ route('articles.edit', $article) }}" class="btn btn-outline-primary me-2">Modifier</a>
+  @endcan
+  @can('delete', $article)
+    <form id="del-{{ $article->id }}" action="{{ route('articles.destroy', $article) }}" method="POST" class="d-inline">
+      @csrf @method('DELETE')
+      <button type="button" onclick="confirmDelete('del-{{ $article->id }}')" class="btn btn-outline-danger">Supprimer</button>
+    </form>
+  @endcan
+</article>
+
+<hr>
+
+<section class="mt-4">
+  <h2 class="h4">Commentaires ({{ $article->comments->count() }})</h2>
+
+  @auth
+    <form action="{{ route('articles.comments.store', $article) }}" method="POST" class="mb-4">
+      @csrf
+      <div class="mb-3">
+        <label class="form-label">Votre commentaire</label>
+        <textarea name="body" rows="4" class="form-control" minlength="10" required>{{ old('body') }}</textarea>
+      </div>
+      <button class="btn btn-primary">Publier le commentaire</button>
+    </form>
+  @else
+    <div class="alert alert-warning">Vous devez être connecté pour commenter. <a href="{{ route('login') }}">Se connecter</a></div>
+  @endauth
+
+  @forelse($article->comments as $c)
+    <div class="border rounded p-3 mb-3 bg-light">
+      <div class="small text-muted mb-1">Par <strong>{{ $c->user->name }}</strong> • {{ $c->created_at->diffForHumans() }}</div>
+      <div>{{ $c->body }}</div>
+    </div>
+  @empty
+    <p class="text-muted">Pas encore de commentaires.</p>
+  @endforelse
+</section>
+@endsection
