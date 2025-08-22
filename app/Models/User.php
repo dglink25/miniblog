@@ -46,7 +46,23 @@ class User extends Authenticatable
         ];
     }
 
-    public function articles() { return $this->hasMany(\App\Models\Article::class); }
+    public function followers() {
+        return $this->belongsToMany(User::class, 'subscriptions', 'followed_id', 'follower_id');
+    }
+    public function following() {
+        return $this->belongsToMany(User::class, 'subscriptions', 'follower_id', 'followed_id');
+    }
+    public function articles() {
+        return $this->hasMany(\App\Models\Article::class);
+    }
+    public function articleRatings() {
+        return $this->hasMany(\App\Models\ArticleRating::class);
+    }
+
+    public function rating() { return $this->hasOne(\App\Models\Rating::class); }
+    public function suggestions() { return $this->hasMany(\App\Models\Suggestion::class); }
+
+    //public function articles() { return $this->hasMany(\App\Models\Article::class); }
     public function comments() { return $this->hasMany(\App\Models\Comment::class); }
 
 }

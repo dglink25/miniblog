@@ -35,6 +35,21 @@
     <textarea name="content" rows="6" class="form-control" required>{{ old('content', $article->content) }}</textarea>
   </div>
 
+  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+  <script>
+    tinymce.init({
+      selector: 'textarea[name=content]',
+      plugins: 'table image link lists code',
+      toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist | table | link image | code',
+      menubar: false,
+      height: 400,
+      automatic_uploads: true,
+      images_upload_url: '{{ route('tinymce.upload') }}',
+      file_picker_types: 'image',
+      images_upload_credentials: true,
+    });
+  </script>
+
   <div class="col-12 col-md-6">
     <label class="form-label">Remplacer l'image (optionnel)</label>
     <input type="file" name="image" accept="image/*" class="form-control" onchange="previewImage(this)">

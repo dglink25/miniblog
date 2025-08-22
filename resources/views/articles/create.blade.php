@@ -15,6 +15,8 @@
     <textarea name="content" rows="6" class="form-control" required>{{ old('content') }}</textarea>
   </div>
 
+  
+
   <div class="col-12 col-md-6">
     <label class="form-label">Image</label>
     <input type="file" name="image" accept="image/*" class="form-control" onchange="previewImage(this)" required>

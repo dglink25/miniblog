@@ -2,10 +2,28 @@
 @extends('layouts.app')
 
 @section('content')
+
+@auth
+    @if(auth()->id() !== $article->user->id)
+        @if(auth()->user()->following?->contains($article->user->id))
+            <form method="POST" action="{{ route('users.unfollow', $article->user) }}">
+                @csrf
+                @method('DELETE')
+                <button class="btn btn-warning">Se désabonner</button>
+            </form>
+        @else
+            <form method="POST" action="{{ route('users.follow', $article->user) }}">
+                @csrf
+                <button class="btn btn-primary">S’abonner</button>
+            </form>
+        @endif
+    @endif
+@endauth
+
 <article class="mb-4">
   <h1 class="mb-2">{{ $article->title }}</h1>
   <div class="text-muted mb-3">
-    Par <strong>{{ $article->user->name }}</strong>
+    Par<strong><a href="{{ route('user.articles', $article->user->id) }}">{{ $article->user->name }}</a></strong>
     • publié {{ $article->created_at->diffForHumans() }}
     @if($article->updated_at->gt($article->created_at))
       • modifié {{ $article->updated_at->diffForHumans() }}
@@ -61,5 +79,23 @@
   @empty
     <p class="text-muted">Pas encore de commentaires.</p>
   @endforelse
+
+
+  @auth
+    @php $my = $article->ratings()->where('user_id',auth()->id())->first(); @endphp
+    <div class="mt-3">
+      <form action="{{ route('articles.rate',$article) }}" method="POST" class="d-inline"> @csrf
+        @if(!$my)
+          <span class="me-2">Noter :</span>
+          @for($i=1;$i<=5;$i++)
+            <button name="stars" value="{{ $i }}" class="btn btn-sm btn-outline-warning">★</button>
+          @endfor
+        @else
+          <span>Votre note : {{ $my->stars }}★</span>
+        @endif
+      </form>
+      <div class="small text-muted">Moyenne : {{ number_format($article->ratings()->avg('stars'),2) }} / 5</div>
+    </div>
+  @endauth
 </section>
 @endsection
