@@ -1,3 +1,4 @@
+@include('emails.header')
 <h2>Bonjour {{ $article->user->name }}</h2>
 
 <p>Votre article <strong>{{ $article->title }}</strong> a été {{ $status }}.</p>
@@ -7,3 +8,5 @@
 @endif
 
 <p>Merci de votre contribution !</p>
+
+@include('emails.footer')

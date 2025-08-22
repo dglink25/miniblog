@@ -56,3 +56,54 @@ Route::middleware(['auth'])->group(function () {
 Route::post('/articles/{article}/comments', [CommentController::class, 'store'])
     ->middleware('auth')
     ->name('articles.comments.store');
+
+
+    // routes/web.php
+    Route::middleware('auth')->group(function () {
+        Route::post('/articles/{article}/favorite', [\App\Http\Controllers\FavoriteController::class,'toggle'])
+            ->name('favorites.toggle');
+        Route::get('/mes-favoris', [\App\Http\Controllers\FavoriteController::class,'index'])
+            ->name('favorites.index');
+    });
+
+Route::middleware('auth')->get('/notifications/poll', function () {
+    $count = auth()->user()->unreadNotifications()->count();
+    return response()->json(['unread' => $count]);
+})->name('notifications.poll');
+
+Route::middleware('auth')->post('/notifications/mark-all-read', function () {
+    auth()->user()->unreadNotifications->markAsRead();
+    return back();
+})->name('notifications.readAll');
+
+Route::get('/user/{user}/articles', [\App\Http\Controllers\ArticleController::class,'byUser'])->name('user.articles');
+
+Route::post('/editor/upload', [\App\Http\Controllers\EditorUploadController::class,'store'])
+    ->middleware('auth')->name('tinymce.upload');
+
+    
+Route::get('/mes-articles', [\App\Http\Controllers\ArticleController::class,'mine'])
+    ->middleware('auth')->name('articles.mine');
+
+Route::delete('/admin/articles/{article}', [\App\Http\Controllers\Admin\AdminController::class,'destroy'])
+    ->middleware('auth') // 👈 enlève 'admin'
+    ->name('admin.articles.destroy');
+
+Route::get('/bienvenue', function () {
+    $settings = \App\Models\SiteSetting::current();
+    return view('intro', compact('settings'));
+})->name('intro.show');
+
+Route::post('/bienvenue/ok', function(){
+    return redirect()->route('articles.index')->withCookie(cookie()->forever('seen_intro', now()->toDateTimeString()));
+})->name('intro.accept');
+
+Route::get('/notifications/{id}', [App\Http\Controllers\NotificationController::class, 'show'])
+    ->name('notifications.show');
+
+Route::post('/tinymce/upload', [\App\Http\Controllers\TinyMCEController::class, 'upload'])->name('tinymce.upload');
+
+Route::patch('/admin/articles/{article}/pin', [AdminController::class, 'togglePin'])
+    ->middleware('auth') // garde juste 'auth'
+    ->name('admin.articles.togglePin');
+

@@ -7,8 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
-{
+class User extends Authenticatable{
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
@@ -64,5 +63,16 @@ class User extends Authenticatable
 
     //public function articles() { return $this->hasMany(\App\Models\Article::class); }
     public function comments() { return $this->hasMany(\App\Models\Comment::class); }
+
+    // app/Models/User.php
+    public function favorites(){
+        return $this->belongsToMany(Article::class, 'favorites')->withTimestamps();
+    }
+
+    // app/Models/Article.php
+    public function favoritedBy(){
+        return $this->belongsToMany(User::class, 'favorites')->withTimestamps();
+    }
+
 
 }

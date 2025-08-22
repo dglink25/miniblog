@@ -4,3 +4,9 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+.article-card img{object-fit:cover;height:220px}
+.card{border:0;border-radius:1rem}
+.btn{border-radius:1rem}
+

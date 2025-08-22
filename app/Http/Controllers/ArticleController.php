@@ -9,6 +9,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\SiteSetting;
+use Purifier;
+
 
 class ArticleController extends Controller
 {
@@ -18,19 +20,24 @@ class ArticleController extends Controller
         $this->middleware('auth')->except(['index', 'show']);
     }
 
-    public function index(Request $request){
-        $q = $request->string('q')->toString();
-        $articles = Article::with('user')
-            ->when($q, fn($query) => $query->where(function($sub) use ($q) {
-                $sub->where('title','like',"%{$q}%")
-                    ->orWhere('content','like',"%{$q}%");
-            }))
-            ->where('is_published', true)
-            ->latest('published_at')  // tri par date de publication
-            ->paginate(5)->withQueryString();
+    public function index(Request $request)
+{
+    $q = $request->string('q')->toString();
 
-        return view('articles.index', compact('articles','q'));
-    }
+    $articles = Article::with('user')
+        ->when($q, fn($query) => $query->where(function($sub) use ($q) {
+            $sub->where('title', 'like', "%{$q}%")
+                ->orWhere('content', 'like', "%{$q}%");
+        }))
+        ->where('is_published', true)
+        ->orderByDesc('pinned')      // 🔹 les articles épinglés en premier
+        ->latest('published_at')     // puis par date de publication
+        ->paginate(5)
+        ->withQueryString();
+
+    return view('articles.index', compact('articles','q'));
+}
+
 
 
     public function create()
@@ -40,7 +47,7 @@ class ArticleController extends Controller
 
     public function store(StoreArticleRequest $request): RedirectResponse{
         $path = $request->file('image')->store('articles', 'public');
-
+        $data['content'] = Purifier::clean($request->input('content'));
         $settings = \App\Models\SiteSetting::current();
         $auto = (bool) $settings->auto_publish;
         $article = Article::create([
@@ -137,10 +144,15 @@ class ArticleController extends Controller
         return view('articles.mine', compact('pending','validated','rejected'));
     }
 
-    public function byUser($id){
-        $user = \App\Models\User::findOrFail($id);
-        $articles = $user->articles()->published()->with('media')->latest('published_at')->get();
-        return view('articles.by_user', compact('user','articles'));
+    // app/Http/Controllers/ArticleController.php
+    public function byUser(\App\Models\User $user){
+        $articles = $user->articles()
+            ->with(['media','user'])
+            ->where('is_published', true)
+            ->latest('published_at')
+            ->paginate(9);
+        return view('users.articles', compact('user','articles'));
     }
+
 
 }

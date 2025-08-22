@@ -2,11 +2,12 @@
 
 @section('content')
 <div class="d-flex align-items-center justify-content-between mb-3">
-  <h1 class="h3 mb-0">Tous les articles</h1>
+  <h1 class="h3 mb-0">Toutes les publications</h1>
   @auth
-    <a href="{{ route('articles.create') }}" class="btn btn-primary">Nouvel article</a>
+    <a href="{{ route('articles.create') }}" class="btn btn-primary">Nouvelle publication</a>
   @endauth
 </div>
+
 
 {{-- Formulaire de recherche --}}
 <form class="row gy-2 gx-2 mb-3" method="GET" action="{{ route('articles.index') }}">
@@ -19,7 +20,7 @@
 </form>
 
 @if($articles->count() === 0)
-  <div class="alert alert-info">Aucun article pour le moment.</div>
+  <div class="alert alert-info">Aucune publication pour le moment!</div>
 @endif
 
 <div class="row g-3">

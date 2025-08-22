@@ -14,7 +14,7 @@ class StoreCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'body' => 'required|string|min:10',
+            'body' => 'required|string|min:1',
         ];
     }
 
@@ -22,7 +22,7 @@ class StoreCommentRequest extends FormRequest
     {
         return [
             'body.required' => 'Le commentaire est obligatoire.',
-            'body.min' => 'Le commentaire doit contenir au moins 10 caractères.',
+            'body.min' => 'Le commentaire doit contenir au moins 2 caractères.',
         ];
     }
     

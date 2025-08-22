@@ -22,4 +22,10 @@ class ArticleApprovedNotification extends Notification
         return ['article_id'=>$this->article->id,'title'=>$this->article->title,'author'=>$this->article->user->name];
     }
     public function toBroadcast($notifiable){ return new BroadcastMessage($this->toArray($notifiable)); }
+
+
+    public function toDatabase($notifiable){
+        return ['article_id'=>$this->article->id,'title'=>$this->article->title,'type'=>'approved'];
+    }
+
 }

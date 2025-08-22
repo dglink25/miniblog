@@ -10,11 +10,8 @@
           <button class="btn btn-sm btn-outline-primary">Basculer</button>
         </form>
         <hr>
-        <form action="{{ route('admin.updateIntro') }}" method="POST">@csrf
-          <label class="form-label">Page d'intro (HTML)</label>
-          <textarea name="intro_html" class="form-control" rows="6">{{ old('intro_html',$settings->intro_html) }}</textarea>
-          <button class="btn btn-sm btn-primary mt-2">Enregistrer</button>
-        </form>
+
+
       </div>
     </div>
   </div>

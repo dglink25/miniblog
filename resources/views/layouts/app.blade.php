@@ -36,15 +36,65 @@
     {{-- Liens --}}
     <div class="collapse navbar-collapse" id="mainNavbar">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-        <li class="nav-item"><a class="nav-link" href="{{ route('articles.index') }}">Articles</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ route('articles.index') }}">Publications</a></li>
         @auth
-          <li class="nav-item"><a class="nav-link" href="{{ route('articles.create') }}">Écrire</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ route('articles.create') }}">Nouvelle publication</a></li>
           
           @if(Auth::user()->is_admin)
-            <li class="nav-item"><a class="nav-link" href="{{ route('admin.dashboard') }}">Admin</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ route('admin.dashboard') }}">EspaceAdmin</a></li>
           @endif
         @endauth
       </ul>
+
+      <ul class="navbar-nav ms-auto">
+      @auth
+        <li class="nav-item me-3"><a class="nav-link" href="{{ route('articles.mine') }}">Mes publications</a></li>
+        <li class="nav-item dropdown">
+          <ul class="dropdown-menu dropdown-menu-end" style="max-height:300px;overflow:auto">
+            @forelse(auth()->user()->unreadNotifications as $n)
+              <li class="dropdown-item small">{{ $n->data['title'] ?? 'Notification' }}</li>
+            @empty
+              <li class="dropdown-item text-muted">Aucune notification</li>
+            @endforelse
+          </ul>
+        </li>
+      @endauth
+    </ul>
+
+     @auth
+      <li class="nav-item dropdown">
+          <a class="nav-link" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+              <i class="bi bi-bell"></i>
+              @if(auth()->user()->unreadNotifications->count() > 0)
+                  <span class="badge bg-danger">{{ auth()->user()->unreadNotifications->count() }}</span>
+              @endif
+          </a>
+          <ul class="dropdown-menu">
+              @forelse(auth()->user()->unreadNotifications as $notification)
+                  <li>
+                      <a href="{{ route('notifications.show', $notification->id) }}">
+                          {{ $notification->data['message'] ?? 'Nouvelle notification' }}
+                      </a>
+                  </li>
+              @empty
+                  <li><span class="dropdown-item">Aucune notification</span></li>
+              @endforelse
+          </ul>
+      </li>
+
+
+      <audio id="notifSound" src="{{ asset('sounds/notification.mp3') }}" preload="auto"></audio>
+      @endauth
+
+    <ul class="navbar-nav ms-auto">
+        @auth
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('favorites.index') }}">
+                    Mes Favoris
+                </a>
+            </li>
+        @endauth
+    </ul>
 
       {{-- Droite --}}
       <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
@@ -69,30 +119,14 @@
           </li>
         @endguest
       </ul>
+
+
     </div>
   </div>
 </nav>
 {{-- FIN NAVBAR --}}
 
 <main class="py-4 flex-grow-1">
-
-<ul class="navbar-nav ms-auto">
-  @auth
-    <li class="nav-item me-3"><a class="nav-link" href="{{ route('articles.mine') }}">Mes publications</a></li>
-    <li class="nav-item dropdown">
-      <a class="nav-link dropdown-toggle position-relative" href="#" data-bs-toggle="dropdown">
-        🔔 Notifications <span id="notif-badge" class="badge bg-danger">{{ auth()->user()->unreadNotifications()->count() }}</span>
-      </a>
-      <ul class="dropdown-menu dropdown-menu-end" style="max-height:300px;overflow:auto">
-        @forelse(auth()->user()->unreadNotifications as $n)
-          <li class="dropdown-item small">{{ $n->data['title'] ?? 'Notification' }}</li>
-        @empty
-          <li class="dropdown-item text-muted">Aucune notification</li>
-        @endforelse
-      </ul>
-    </li>
-  @endauth
-</ul>
 
 
   <div class="container">
@@ -141,6 +175,28 @@
 
 {{-- Scripts utilitaires --}}
 <script>
+
+
+@auth
+  const badge = document.getElementById('notifBadge');
+  const bell = document.getElementById('notifSound');
+  let lastCount = parseInt(badge?.innerText || '0', 10);
+
+  setInterval(async () => {
+    try{
+      const res = await fetch('{{ route('notifications.poll') }}', {headers:{'X-Requested-With':'XMLHttpRequest'}});
+      const data = await res.json();
+      badge.innerText = data.unread;
+
+      if(data.unread > lastCount){
+        bell?.play().catch(()=>{});
+      }
+      lastCount = data.unread;
+    }catch(e){}
+  }, 8000);
+  @endauth
+
+  
 const toTop = document.getElementById('toTop');
 window.addEventListener('scroll', () => {
   toTop.style.display = window.scrollY > 300 ? 'block' : 'none';

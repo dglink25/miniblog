@@ -4,6 +4,7 @@
 @section('content')
 
 @auth
+    @include('articles.partials.favorite_button', ['article' => $article])
     @if(auth()->id() !== $article->user->id)
         @if(auth()->user()->following?->contains($article->user->id))
             <form method="POST" action="{{ route('users.unfollow', $article->user) }}">
@@ -20,8 +21,17 @@
     @endif
 @endauth
 
+
 <article class="mb-4">
   <h1 class="mb-2">{{ $article->title }}</h1>
+  {{-- resources/views/articles/show.blade.php --}}
+
+  <form method="POST" action="{{ route('admin.articles.destroy',$article) }}" onsubmit="return confirm('Supprimer ?');">
+    @csrf
+    @method('DELETE')
+    <button class="btn btn-sm btn-outline-danger">Supprimer</button>
+  </form>
+
   <div class="text-muted mb-3">
     Par<strong><a href="{{ route('user.articles', $article->user->id) }}">{{ $article->user->name }}</a></strong>
     • publié {{ $article->created_at->diffForHumans() }}
@@ -32,7 +42,7 @@
 
   <img src="{{ asset('storage/'.$article->image_path) }}" class="img-fluid rounded mb-3" alt="Image article {{ $article->title }}">
 
-  <div class="fs-5 mb-3">{!! nl2br(e($article->content)) !!}</div>
+  <div class="fs-5 mb-3">{!! (($article->content)) !!}</div>
 
     @foreach ($article->media as $m)
     @if ($m->isImage())
@@ -65,7 +75,7 @@
         <label class="form-label">Votre commentaire</label>
         <textarea name="body" rows="4" class="form-control" minlength="10" required>{{ old('body') }}</textarea>
       </div>
-      <button class="btn btn-primary">Publier le commentaire</button>
+      <button class="btn btn-primary">commenter</button>
     </form>
   @else
     <div class="alert alert-warning">Vous devez être connecté pour commenter. <a href="{{ route('login') }}">Se connecter</a></div>

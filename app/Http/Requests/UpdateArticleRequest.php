@@ -14,10 +14,10 @@ class UpdateArticleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'required|string|min:5',
+            'title' => 'required|string|min:1',
             'content' => 'required|string',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'media.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,mp4,mov,webm,avi|max:102400',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:20480',
+            'media.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,mp4,mp3,pdf,mov,webm,avi|max:1024000',
         ];
     }
 

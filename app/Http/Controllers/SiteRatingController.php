@@ -5,8 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\SiteRating;
 
-class SiteRatingController extends Controller
-{
+class SiteRatingController extends Controller{
     public function store(Request $request)
     {
         $request->validate([
@@ -20,4 +19,5 @@ class SiteRatingController extends Controller
 
         return back()->with('success', 'Merci pour votre note !');
     }
+    
 }

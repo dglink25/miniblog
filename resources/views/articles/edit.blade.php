@@ -3,6 +3,15 @@
 
 @section('content')
 
+@auth
+<form method="POST" action="{{ route('favorites.toggle', $article) }}" class="d-inline">
+  @csrf
+  <button class="btn btn-outline-danger btn-sm">
+    {{ auth()->user()->favorites->contains($article->id) ? 'Retirer des favoris ❤️' : 'Ajouter aux favoris 🤍' }}
+  </button>
+</form>
+@endauth
+
 @foreach ($article->media as $m)
   <div class="mb-2">
     @if ($m->isImage())
@@ -31,24 +40,47 @@
   </div>
 
   <div class="col-12">
-    <label class="form-label">Contenu</label>
-    <textarea name="content" rows="6" class="form-control" required>{{ old('content', $article->content) }}</textarea>
+    <label class="form-label">Contenu de la publication</label>
+    <textarea id="content-editor" name="content" rows="10" class="form-control" required>{{ old('content', $article->content) }}</textarea>
   </div>
 
-  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+<script src="https://cdn.tiny.cloud/1/bxfoodqbzho4gtk7u8sg750h7hmavqi784ztlsnkg2m52eex/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
   <script>
-    tinymce.init({
-      selector: 'textarea[name=content]',
-      plugins: 'table image link lists code',
-      toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist | table | link image | code',
-      menubar: false,
-      height: 400,
-      automatic_uploads: true,
-      images_upload_url: '{{ route('tinymce.upload') }}',
-      file_picker_types: 'image',
-      images_upload_credentials: true,
-    });
-  </script>
+tinymce.init({
+    selector: '#content-editor',
+    height: 500,
+    menubar: true,
+    plugins: 'table link image media lists code autolink paste',
+    toolbar: 'undo redo | styles | bold italic underline | alignleft aligncenter alignright | bullist numlist | table | link image media | code',
+    
+    // FORCER les classes Bootstrap sur les tableaux automatiquement
+    table_class_list: [
+        {title: 'Tableau pro', value: 'table table-bordered table-striped text-center align-middle'}
+    ],
+
+    // Images / vidéos responsives
+    image_class_list: [
+        {title: 'Responsive', value: 'img-fluid rounded'}
+    ],
+
+    // Auto convertit les liens vers des liens cliquables ou embeds
+    link_title: true,
+    automatic_uploads: true,
+    media_live_embeds: true,
+
+    // Uploads (nécessite route Laravel pour gérer)
+    images_upload_url: '{{ route('tinymce.upload') }}',
+    images_upload_credentials: true,
+
+    // Prévention des styles inline pour garder propre
+    content_style: `
+        body { font-family:Arial,sans-serif; font-size:14px; line-height:1.6; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0.5rem; border: 1px solid #dee2e6; }
+        img { max-width: 100%; height: auto; }
+    `
+});
+</script>
 
   <div class="col-12 col-md-6">
     <label class="form-label">Remplacer l'image (optionnel)</label>
