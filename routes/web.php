@@ -3,12 +3,17 @@
 require __DIR__.'/auth.php';
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\Subscription_Controller;
 use App\Http\Controllers\ArticleRatingController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\SuggestionController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\SiteRatingController;
-
+use App\Http\Controllers\MediaController;
+use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
+use App\Http\Controllers\AnnouncementPublicController;
+use App\Http\Controllers\Admin\SuggestionAdminController;
+use App\Http\Controllers\Admin\PlanController;
 
 Route::post('/ratings', [SiteRatingController::class,'store'])->name('ratings.store');
 
@@ -44,8 +49,6 @@ Route::prefix('admin')->middleware('auth')->group(function(){
 Route::get('/dashboard', function () {
     return view('dashboard'); // Crée ensuite la vue resources/views/dashboard.blade.php
 })->middleware(['auth'])->name('dashboard');
-
-
 Route::post('/editor/upload', [\App\Http\Controllers\EditorUploadController::class,'store'])->name('tinymce.upload')->middleware('auth');
 
 Route::middleware(['auth'])->group(function () {
@@ -107,3 +110,60 @@ Route::patch('/admin/articles/{article}/pin', [AdminController::class, 'togglePi
     ->middleware('auth') // garde juste 'auth'
     ->name('admin.articles.togglePin');
 
+Route::delete('/media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
+
+
+// Annonces (admin)
+Route::prefix('admin')->middleware(['auth'])->group(function(){
+    Route::resource('annonces', AdminAnnouncementController::class)->except(['show']);
+    Route::post('annonces/{announcement}/publish-toggle', [AdminAnnouncementController::class,'toggle'])
+        ->name('admin.annonces.toggle');
+});
+
+// Annonces (public/dismiss)
+Route::post('/annonces/{announcement}/dismiss', [AnnouncementPublicController::class,'dismiss'])
+    ->middleware('auth')
+    ->name('annonces.dismiss');
+
+Route::middleware('auth')->group(function(){
+    Route::get('/suggestions/create', [SuggestionController::class,'create'])->name('suggestions.create');
+    Route::post('/suggestions', [SuggestionController::class,'store'])->name('suggestions.store');
+});
+
+// admin
+Route::prefix('admin')->middleware(['auth'])->group(function(){
+    Route::get('/suggestions', [SuggestionAdminController::class,'index'])->name('admin.suggestions.index');
+    Route::get('/suggestions/{suggestion}', [SuggestionAdminController::class,'show'])->name('admin.suggestions.show');
+    Route::post('/suggestions/{suggestion}/status', [SuggestionAdminController::class,'updateStatus'])
+        ->name('admin.suggestions.updateStatus');
+
+    Route::put('suggestions/{suggestion}', [SuggestionAdminController::class,'updateStatus'])
+        ->name('admin.suggestions.updateStatus');
+
+});
+
+
+Route::middleware(['auth'])->group(function(){
+    Route::get('/articles/create', [ArticleController::class,'create'])->name('articles.create');
+    Route::post('/articles', [ArticleController::class,'store'])->name('articles.store');
+});
+
+Route::get('/abonnements', [Subscription_Controller::class,'plans'])->name('subscriptions.plans');
+Route::post('/abonnements/checkout/{plan}', [Subscription_Controller::class,'checkout'])
+    ->middleware('auth')->name('subscriptions.checkout');
+Route::get('/abonnements/verification', [Subscription_Controller::class,'verifyForm'])
+    ->middleware('auth')->name('subscriptions.verifyForm');
+Route::post('/abonnements/verification', [Subscription_Controller::class,'verifyCode'])
+    ->middleware('auth')->name('subscriptions.verifyCode');
+
+Route::post('/fedapay/callback', [Subscription_Controller::class,'fedapayCallback'])
+    ->name('fedapay.callback');
+
+Route::prefix('admin')->middleware(['auth'])->group(function(){
+    Route::resource('plans', PlanController::class)->except(['show']);
+});
+
+Route::get('/notifications/unread-count', [\App\Http\Controllers\NotificationController::class,'unreadCount'])
+    ->middleware('auth')->name('notifications.unreadCount');
+Route::get('/notifications/{id}', [\App\Http\Controllers\NotificationController::class,'show'])
+    ->middleware('auth')->name('notifications.show');

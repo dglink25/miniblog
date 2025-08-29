@@ -79,7 +79,7 @@ tinymce.init({
            accept="image/*,video/*"
            class="form-control"
            id="media-input">
-    <div class="form-text">Vous pouvez sélectionner plusieurs fichiers.</div>
+    <div style="color:red" class="form-text">Vous pouvez sélectionner plusieurs fichiers. Attention, la taille maximale autorisée 100Mo !</div>
   </div>
 
   <div class="col-12 col-md-6 d-flex align-items-start">

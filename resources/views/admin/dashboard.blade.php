@@ -10,8 +10,6 @@
           <button class="btn btn-sm btn-outline-primary">Basculer</button>
         </form>
         <hr>
-
-
       </div>
     </div>
   </div>

@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    
+    'fedapay' => [
+        'secret' => env('FEDAPAY_SECRET'),
+        'public' => env('FEDAPAY_PUBLIC'),
+        'base'   => env('FEDAPAY_BASE'),
+        'currency' => env('FEDAPAY_CURRENCY','XOF'),
+    ],
+
+
 ];

@@ -12,22 +12,6 @@
 </form>
 @endauth
 
-@foreach ($article->media as $m)
-  <div class="mb-2">
-    @if ($m->isImage())
-      <img src="{{ asset('storage/'.$m->file_path) }}" class="img-thumbnail" style="max-height:120px;">
-    @else
-      <video src="{{ asset('storage/'.$m->file_path) }}" controls style="max-height:160px; width:100%;"></video>
-    @endif
-
-    <form action="{{ route('media.destroy', $m) }}" method="POST" class="d-inline">
-      @csrf
-      @method('DELETE')
-      <button class="btn btn-sm btn-danger">Supprimer</button>
-    </form>
-  </div>
-@endforeach
-
 <h1 class="h3 mb-3">Modifier : {{ $article->title }}</h1>
 
 <form action="{{ route('articles.update', $article) }}" method="POST" enctype="multipart/form-data" class="row g-3">
@@ -90,7 +74,21 @@ tinymce.init({
   <div class="col-12 col-md-6 d-flex align-items-end">
     <img id="preview" src="{{ asset('storage/'.$article->image_path) }}" class="img-fluid rounded border" alt="Aperçu">
   </div>
+  @foreach ($article->media as $m)
+  <div class="mb-2">
+    @if ($m->isImage())
+      <img src="{{ asset('storage/'.$m->file_path) }}" class="img-thumbnail" style="max-height:120px;">
+    @else
+      <video src="{{ asset('storage/'.$m->file_path) }}" controls style="max-height:160px; width:100%;"></video>
+    @endif
 
+    <form action="{{ route('media.destroy', $m) }}" method="POST" class="d-inline">
+      @csrf
+      @method('DELETE')
+      <button class="btn btn-sm btn-danger">Supprimer</button>
+    </form>
+  </div>
+@endforeach
   <div class="col-12">
     <button class="btn btn-primary">Enregistrer</button>
     <a href="{{ route('articles.show', $article) }}" class="btn btn-outline-secondary">Annuler</a>

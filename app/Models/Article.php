@@ -44,8 +44,7 @@ class Article extends Model
         });
     }
 
-    public static function uniqueSlug(string $title, ?int $ignoreId = null): string
-    {
+    public static function uniqueSlug(string $title, ?int $ignoreId = null): string{
         $base = Str::slug($title);
         $slug = $base;
         $i = 2;

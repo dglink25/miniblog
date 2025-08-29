@@ -1,111 +1,124 @@
+@php
+  use Illuminate\Support\Facades\Auth;
+  $user = Auth::user();
+  $settings = \App\Models\SiteSetting::current();
+  $unreadCount = $user ? $user->unreadNotifications()->count() : 0;
+@endphp
+
 <!doctype html>
 <html lang="fr">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ config('app.name', 'MiniBlog') }}</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ config('app.name', $settings->site_name ?? 'DGLink_Pub') }}</title>
 
-    {{-- Bootstrap CSS via CDN --}}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  {{-- Bootstrap CSS --}}
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  {{-- (Optionnel) Icônes Bootstrap --}}
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
-    {{-- ⚠️ Optionnel si tu utilises Vite --}}
-    {{-- @vite(['resources/css/app.css', 'resources/js/app.js']) --}}
-
-    <style>
-        .article-card img { object-fit: cover; height: 220px; }
-        .pointer { cursor: pointer; }
-        #toTop { position: fixed; bottom: 20px; right: 20px; display: none; }
-    </style>
+  <style>
+    .pointer { cursor:pointer; }
+    #toTop { position: fixed; bottom: 20px; right: 20px; display: none; z-index: 1031; }
+    .nav-link .badge-notif {
+      position:absolute; top:0; right:-.35rem; transform: translate(50%, -30%);
+    }
+    .dropdown-menu-notifs { max-height: 320px; overflow:auto; width: 320px; }
+  </style>
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100 bg-light">
 
 {{-- NAVBAR --}}
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
   <div class="container">
-    <a class="navbar-brand fw-bold" href="{{ route('articles.index') }}">
+    <a class="navbar-brand fw-bold" href="{{ route('dashboard') }}">
       {{ $settings->site_name ?? 'DGLink_Pub' }}
-  </a>
+    </a>
 
-
-    {{-- Bouton hamburger mobile --}}
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
       aria-controls="mainNavbar" aria-expanded="false" aria-label="Menu">
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    {{-- Liens --}}
     <div class="collapse navbar-collapse" id="mainNavbar">
+      {{-- Liens principaux gauche --}}
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <li class="nav-item"><a class="nav-link" href="{{ route('articles.index') }}">Publications</a></li>
+
         @auth
+          {{-- Nouvelle publication (protégée par le middleware publish.access côté routes) --}}
           <li class="nav-item"><a class="nav-link" href="{{ route('articles.create') }}">Nouvelle publication</a></li>
-          
-          @if(Auth::user()->is_admin)
-            <li class="nav-item"><a class="nav-link" href="{{ route('admin.dashboard') }}">EspaceAdmin</a></li>
+
+          {{-- Mes publications --}}
+          <li class="nav-item"><a class="nav-link" href="{{ route('articles.mine') }}">Mes publications</a></li>
+
+          {{-- Favoris --}}
+          <li class="nav-item"><a class="nav-link" href="{{ route('favorites.index') }}">Mes favoris</a></li>
+
+          {{-- Suggestions (utilisateur → admin) --}}
+          <li class="nav-item"><a class="nav-link" href="{{ route('suggestions.create') }}">Suggestion</a></li>
+
+          {{-- Abonnements / Plans --}}
+          <li class="nav-item"><a class="nav-link" href="{{ route('subscriptions.plans') }}">Abonnements</a></li>
+
+          {{-- Espace Admin (si admin) --}}
+          @if($user->is_admin ?? false)
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="adminDrop" data-bs-toggle="dropdown" aria-expanded="false">
+                Espace Admin
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="adminDrop">
+                <li><a class="dropdown-item" href="{{ route('admin.dashboard') }}">Tableau de bord</a></li>
+                <li><a class="dropdown-item" href="{{ route('annonces.index') }}">Annonces</a></li>
+                <li><a class="dropdown-item" href="{{ route('plans.index') }}">Plans d’abonnement</a></li>
+                <li><a class="dropdown-item" href="{{ route('admin.suggestions.index') }}">Suggestions</a></li>
+                {{-- Ajoute ici la page d’articles en attente/validés si tu as un controller dédié --}}
+              </ul>
+            </li>
           @endif
         @endauth
       </ul>
 
-      <ul class="navbar-nav ms-auto">
-      @auth
-        <li class="nav-item me-3"><a class="nav-link" href="{{ route('articles.mine') }}">Mes publications</a></li>
-        <li class="nav-item dropdown">
-          <ul class="dropdown-menu dropdown-menu-end" style="max-height:300px;overflow:auto">
-            @forelse(auth()->user()->unreadNotifications as $n)
-              <li class="dropdown-item small">{{ $n->data['title'] ?? 'Notification' }}</li>
-            @empty
-              <li class="dropdown-item text-muted">Aucune notification</li>
-            @endforelse
-          </ul>
-        </li>
-      @endauth
-    </ul>
+      {{-- Zone droite (notifs + user) --}}
+      <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
 
-     @auth
-      <li class="nav-item dropdown">
-          <a class="nav-link" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-              <i class="bi bi-bell"></i>
-              @if(auth()->user()->unreadNotifications->count() > 0)
-                  <span class="badge bg-danger">{{ auth()->user()->unreadNotifications->count() }}</span>
-              @endif
-          </a>
-          <ul class="dropdown-menu">
-              @forelse(auth()->user()->unreadNotifications as $notification)
-                  <li>
-                      <a href="{{ route('notifications.show', $notification->id) }}">
-                          {{ $notification->data['message'] ?? 'Nouvelle notification' }}
-                      </a>
-                  </li>
-              @empty
-                  <li><span class="dropdown-item">Aucune notification</span></li>
-              @endforelse
-          </ul>
-      </li>
-
-
-      <audio id="notifSound" src="{{ asset('sounds/notification.mp3') }}" preload="auto"></audio>
-      @endauth
-
-    <ul class="navbar-nav ms-auto">
         @auth
-            <li class="nav-item">
-                <a class="nav-link" href="{{ route('favorites.index') }}">
-                    Mes Favoris
-                </a>
-            </li>
+          {{-- Cloche notifications --}}
+          <li class="nav-item dropdown me-lg-2">
+            <a class="nav-link position-relative" href="#" id="notifDrop" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-bell"></i>
+              @if($unreadCount > 0)
+                <span id="notifBadge" class="badge bg-danger rounded-pill badge-notif">{{ $unreadCount }}</span>
+              @endif
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-notifs" aria-labelledby="notifDrop">
+              @php $items = $user->unreadNotifications()->latest()->take(10)->get(); @endphp
+              @forelse($items as $n)
+                <li>
+                  <a class="dropdown-item small" href="{{ route('notifications.show',$n->id) }}">
+                    {{ $n->data['message'] ?? ($n->data['title'] ?? 'Notification') }}
+                  </a>
+                </li>
+              @empty
+                <li><span class="dropdown-item text-muted">Aucune notification</span></li>
+              @endforelse
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item small text-muted" href="{{ route('articles.index') }}">Voir tout</a></li>
+            </ul>
+          </li>
         @endauth
-    </ul>
 
-      {{-- Droite --}}
-      <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+        {{-- Connexion / Profil --}}
         @guest
           <li class="nav-item"><a class="nav-link" href="{{ route('login') }}">Connexion</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ route('register') }}">Inscription</a></li>
         @else
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
-               data-bs-toggle="dropdown" aria-expanded="false">
-              👤 {{ Auth::user()->name }}
+            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <span class="rounded-circle bg-secondary text-white d-inline-flex justify-content-center align-items-center" style="width:28px;height:28px;">
+                {{ mb_substr($user->name,0,1) }}
+              </span>
+              <span class="d-none d-lg-inline">{{ $user->name }}</span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
               <li>
@@ -119,16 +132,12 @@
           </li>
         @endguest
       </ul>
-
-
     </div>
   </div>
 </nav>
-{{-- FIN NAVBAR --}}
+{{-- /NAVBAR --}}
 
 <main class="py-4 flex-grow-1">
-
-
   <div class="container">
     @if(session('success'))
       <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -155,10 +164,9 @@
   @php
     $avg = round(\App\Models\Rating::avg('stars') ?? 0, 2);
     $countRatings = \App\Models\Rating::count();
-    $settings = \App\Models\SiteSetting::current();
   @endphp
   <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between text-center text-md-start">
-    <small>© {{ date('Y') }} {{ $settings->company_name }} — {{ $settings->site_name }}</small>
+    <small>© {{ date('Y') }} {{ $settings->company_name ?? 'Votre société' }} — {{ $settings->site_name ?? config('app.name','DGLink_Pub') }}</small>
     <div class="mt-2 mt-md-0">
       <span class="me-2">Note : <strong>{{ $avg }}/5</strong> ({{ $countRatings }})</span>
       @auth
@@ -170,33 +178,55 @@
   </div>
 </footer>
 
-{{-- JS Bootstrap --}}
+{{-- Bootstrap JS --}}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-{{-- Scripts utilitaires --}}
-<script>
+{{-- Bell sound --}}
+<audio id="notifSound" preload="auto">
+  <source src="{{ asset('sounds/bell.mp3') }}" type="audio/mpeg">
+</audio>
 
-
+{{-- Polling notifications (15s) --}}
 @auth
-  const badge = document.getElementById('notifBadge');
-  const bell = document.getElementById('notifSound');
-  let lastCount = parseInt(badge?.innerText || '0', 10);
-
-  setInterval(async () => {
+<script>
+(function(){
+  let last = {{ $unreadCount }};
+  async function tick(){
     try{
-      const res = await fetch('{{ route('notifications.poll') }}', {headers:{'X-Requested-With':'XMLHttpRequest'}});
-      const data = await res.json();
-      badge.innerText = data.unread;
-
-      if(data.unread > lastCount){
-        bell?.play().catch(()=>{});
+      const r = await fetch('{{ route('notifications.unreadCount') }}', {headers:{'X-Requested-With':'XMLHttpRequest'}});
+      const {count} = await r.json();
+      const badge = document.getElementById('notifBadge');
+      if(count !== last){
+        if(count > last){
+          document.getElementById('notifSound')?.play().catch(()=>{});
+        }
+        last = count;
+        if(count>0){
+          if(!badge){
+            const a=document.querySelector('#notifDrop');
+            const span=document.createElement('span');
+            span.id='notifBadge';
+            span.className='badge bg-danger rounded-pill badge-notif';
+            span.textContent=count;
+            a.appendChild(span);
+          } else {
+            badge.textContent=count;
+          }
+        } else {
+          badge?.remove();
+        }
       }
-      lastCount = data.unread;
     }catch(e){}
-  }, 8000);
-  @endauth
+    setTimeout(tick, 15000);
+  }
+  tick();
+})();
+</script>
+@endauth
 
-  
+{{-- Bouton remonter en haut --}}
+<button id="toTop" class="btn btn-primary rounded-circle shadow">↑</button>
+<script>
 const toTop = document.getElementById('toTop');
 window.addEventListener('scroll', () => {
   toTop.style.display = window.scrollY > 300 ? 'block' : 'none';
@@ -204,38 +234,7 @@ window.addEventListener('scroll', () => {
 toTop?.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
 </script>
 
-<button id="toTop" class="btn btn-primary rounded-circle shadow">↑</button>
-
-
-
-<script src="https://js.pusher.com/8.2/pusher.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/laravel-echo@1/dist/echo.iife.js"></script>
-<script>
-  if ({{ auth()->check() ? 'true' : 'false' }}) {
-    window.Pusher = Pusher;
-    window.Echo = new Echo({
-      broadcaster: 'pusher',
-      key: '{{ config('broadcasting.connections.pusher.key') }}',
-      cluster: '{{ config('broadcasting.connections.pusher.options.cluster') ?? 'mt1' }}',
-      wsHost: '{{ request()->getHost() }}',
-      wsPort: 6001,
-      forceTLS: false,
-      enabledTransports: ['ws','wss'],
-      authEndpoint: '{{ url('/broadcasting/auth') }}',
-      auth: { headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' } }
-    });
-    window.Echo.private('App.Models.User.{{ auth()->id() }}')
-      .notification((notification) => {
-        const el = document.getElementById('notif-badge');
-        if (el) el.textContent = parseInt(el.textContent||'0') + 1;
-      });
-  }
-</script>
-
-
-</body>
-
-<!-- Modal pour noter le site -->
+{{-- MODAL Rating site --}}
 <div class="modal fade" id="rateModal" tabindex="-1" aria-labelledby="rateModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -264,21 +263,19 @@ toTop?.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'
 </div>
 
 <script>
-// Permet de sélectionner les étoiles avec survol
+// Effet étoiles
 const stars = document.querySelectorAll('label[for^="star"]');
 stars.forEach((star, idx) => {
   star.addEventListener('mouseenter', () => {
-    stars.forEach((s, i) => {
-      s.textContent = i <= idx ? '★' : '☆';
-    });
+    stars.forEach((s, i) => s.textContent = i <= idx ? '★' : '☆');
   });
 });
 document.querySelectorAll('input[name="stars"]').forEach(input => {
   input.addEventListener('change', () => {
-    stars.forEach((s, i) => {
-      s.textContent = i < input.value ? '★' : '☆';
-    });
+    stars.forEach((s, i) => s.textContent = i < input.value ? '★' : '☆');
   });
 });
 </script>
+
+</body>
 </html>

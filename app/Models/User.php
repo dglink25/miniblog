@@ -73,6 +73,23 @@ class User extends Authenticatable{
     public function favoritedBy(){
         return $this->belongsToMany(User::class, 'favorites')->withTimestamps();
     }
+    // App\Models\User.php
+    public function isAdmin()
+    {
+        return $this->is_admin; // true si admin
+    }
+    public function subscription(){ return $this->hasMany(\App\Models\Subscription::class); }
+    public function activeSubscription(){
+        return $this->subscription()->where('status','active')
+            ->where('starts_at','<=',now())->where('ends_at','>=',now())
+            ->latest()->first();
+    }
+    public function canPublish(): bool {
+        $setting = \App\Models\SiteSetting::current();
+        $trialDays = $setting->trial_days ?? 50;
+        $inTrial = $this->created_at->addDays($trialDays)->isFuture();
+        return $inTrial || (bool)$this->activeSubscription();
+    }
 
 
 }

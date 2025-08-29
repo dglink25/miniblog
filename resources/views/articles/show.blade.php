@@ -26,15 +26,19 @@
   <h1 class="mb-2">{{ $article->title }}</h1>
   {{-- resources/views/articles/show.blade.php --}}
 
-  <form method="POST" action="{{ route('admin.articles.destroy',$article) }}" onsubmit="return confirm('Supprimer ?');">
-    @csrf
-    @method('DELETE')
-    <button class="btn btn-sm btn-outline-danger">Supprimer</button>
-  </form>
+  @auth
+      @if(auth()->user()->isAdmin())
+          <form method="POST" action="{{ route('admin.articles.destroy',$article) }}" onsubmit="return confirm('Supprimer ?');">
+            @csrf
+            @method('DELETE')
+            <button class="btn btn-sm btn-outline-danger">Supprimer en tant que administrateur</button>
+          </form>
+      @endif
+  @endauth
 
   <div class="text-muted mb-3">
-    Par<strong><a href="{{ route('user.articles', $article->user->id) }}">{{ $article->user->name }}</a></strong>
-    • publié {{ $article->created_at->diffForHumans() }}
+    Publiée par <strong><a href="{{ route('user.articles', $article->user->id) }}">{{ $article->user->name }}</a></strong>
+     le {{ $article->created_at->diffForHumans() }}
     @if($article->updated_at->gt($article->created_at))
       • modifié {{ $article->updated_at->diffForHumans() }}
     @endif
@@ -46,21 +50,29 @@
 
     @foreach ($article->media as $m)
     @if ($m->isImage())
-        <img src="{{ asset('storage/'.$m->file_path) }}" class="img-fluid mb-3">
+        <img src="{{ asset('storage/'.$m->file_path) }}" class="img-fluid mb-3 rounded border">
     @elseif ($m->isVideo())
-        <video controls class="img-fluid mb-3" src="{{ asset('storage/'.$m->file_path) }}"></video>
+        <video controls class="img-fluid mb-3 rounded border">
+            <source src="{{ asset('storage/'.$m->file_path) }}" type="{{ $m->mime_type }}">
+        </video>
+    @else
+        <a href="{{ asset('storage/'.$m->file_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+            Télécharger le fichier
+        </a>
     @endif
-    @endforeach
+@endforeach
+
 
   @can('update', $article)
     <a href="{{ route('articles.edit', $article) }}" class="btn btn-outline-primary me-2">Modifier</a>
   @endcan
   @can('delete', $article)
-    <form id="del-{{ $article->id }}" action="{{ route('articles.destroy', $article) }}" method="POST" class="d-inline">
-      @csrf @method('DELETE')
-      <button type="button" onclick="confirmDelete('del-{{ $article->id }}')" class="btn btn-outline-danger">Supprimer</button>
-    </form>
+  <form id="del-{{ $article->id }}" action="{{ route('articles.destroy', $article) }}" method="POST" class="d-inline">
+      @csrf
+      @method('DELETE')
+  </form>
   @endcan
+
 </article>
 
 <hr>

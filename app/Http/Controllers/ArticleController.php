@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Models\SiteSetting;
 use Purifier;
+use App\Models\Announcement;
 
 
 class ArticleController extends Controller
@@ -20,25 +21,35 @@ class ArticleController extends Controller
         $this->middleware('auth')->except(['index', 'show']);
     }
 
-    public function index(Request $request)
-{
-    $q = $request->string('q')->toString();
+    public function index(Request $request){
+        $q = $request->string('q')->toString();
 
-    $articles = Article::with('user')
-        ->when($q, fn($query) => $query->where(function($sub) use ($q) {
-            $sub->where('title', 'like', "%{$q}%")
-                ->orWhere('content', 'like', "%{$q}%");
-        }))
-        ->where('is_published', true)
-        ->orderByDesc('pinned')      // 🔹 les articles épinglés en premier
-        ->latest('published_at')     // puis par date de publication
-        ->paginate(5)
-        ->withQueryString();
+        $articles = Article::with('user')
+            ->when($q, fn($query) => $query->where(function($sub) use ($q) {
+                $sub->where('title', 'like', "%{$q}%")
+                    ->orWhere('content', 'like', "%{$q}%");
+            }))
+            ->where('status', 'validated')
+            ->orderByDesc('pinned')      // 🔹 les articles épinglés en premier
+            ->latest('published_at')     // puis par date de publication
+            ->paginate(5)
+            ->withQueryString();
 
-    return view('articles.index', compact('articles','q'));
-}
+        $annonces = Announcement::published()
+            ->when(auth()->check(), function($q) {
+                $q->whereNotIn('id', function($sub){
+                    $sub->select('announcement_id')
+                        ->from('announcement_user_dismissals')
+                        ->where('user_id', auth()->id());
+                });
+            })
+            ->orderByDesc('is_pinned') // épinglés en tête
+            ->orderByDesc('published_at')
+            ->take(3) // limite si tu veux
+            ->get();
 
-
+        return view('articles.index', compact('articles','q','annonces'));
+    }
 
     public function create()
     {
@@ -46,23 +57,46 @@ class ArticleController extends Controller
     }
 
     public function store(StoreArticleRequest $request): RedirectResponse{
-        $path = $request->file('image')->store('articles', 'public');
-        $data['content'] = Purifier::clean($request->input('content'));
+        // Données validées automatiquement
+        $validated = $request->validated();
+
+        $path = $request->file('image')
+            ? $request->file('image')->store('articles', 'public')
+            : null;
+
+        $data['content'] = \Purifier::clean($request->input('content'));
         $settings = \App\Models\SiteSetting::current();
         $auto = (bool) $settings->auto_publish;
+
         $article = Article::create([
-            'user_id'=>auth()->id(),
-            'title'=>$request->title,
-            'content'=>$request->content,
-            'image_path'=>$path ?? null,
-            'status' => $auto ? 'validated' : 'pending',
-            'published_at' => $auto ? now() : null,
-            'is_published' => $auto,
+            'user_id'       => auth()->id(),
+            'title'         => $validated['title'],
+            'content'       => $data['content'],
+            'image_path'    => $path,
+            'status'        => $auto ? 'validated' : 'pending',
+            'published_at'  => $auto ? now() : null,
+            'is_published'  => $auto, // bool direct
         ]);
 
-        return redirect()->route('articles.mine')
-            ->with('success','Article enregistré, en attente de validation par administrateur!');
+        // Médias multiples
+        if ($request->hasFile('media')) {
+            foreach ($request->file('media') as $file) {
+                $path = $file->store('articles', 'public');
 
+                $mime = $file->getMimeType();
+                $type = str_starts_with($mime, 'image') ? 'image'
+                        : (str_starts_with($mime, 'video') ? 'video' : 'file');
+
+                $article->media()->create([
+                    'file_path' => $path,
+                    'mime_type' => $mime,
+                    'type' => $type,
+                ]);
+            }
+        }
+
+        return redirect()->route('articles.mine')
+            ->with('success', 'Article enregistré, en attente de validation par administrateur!');
     }
 
 
@@ -76,16 +110,12 @@ class ArticleController extends Controller
         return view('articles.show', compact('article'));
     }
 
-
-
-    public function edit(Article $article)
-    {
+    public function edit(Article $article){
         $this->authorize('update', $article);
         return view('articles.edit', compact('article'));
     }
 
-    public function update(UpdateArticleRequest $request, Article $article): RedirectResponse
-    {
+    public function update(UpdateArticleRequest $request, Article $article): RedirectResponse{
         $this->authorize('update', $article);
 
         $data = $request->only('title','content');
