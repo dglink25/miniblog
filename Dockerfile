@@ -1,28 +1,29 @@
-# Étape 1 : image PHP avec extensions Laravel
-FROM php:8.3-fpm
+FROM php:8.2-fpm
 
 # Installer dépendances système
 RUN apt-get update && apt-get install -y \
-    libzip-dev unzip git curl libpng-dev libonig-dev libxml2-dev \
-    && docker-php-ext-install pdo_mysql zip mbstring gd intl bcmath
+    git \
+    unzip \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    libzip-dev \
+    && docker-php-ext-install pdo_mysql bcmath gd zip
 
 # Installer Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2.5 /usr/bin/composer /usr/bin/composer
 
-# Définir le dossier de travail
-WORKDIR /var/www
-
-# Copier les fichiers
+# Copier code
+WORKDIR /var/www/html
 COPY . .
 
-# Installer les dépendances PHP
-RUN composer install --no-dev --optimize-autoloader
+# Installer dépendances Laravel
+RUN composer install --optimize-autoloader --no-scripts --no-interaction
 
-# Définir le user (optionnel)
-RUN chown -R www-data:www-data /var/www
+# Définir le port
+EXPOSE 8000
 
-# Exposer le port 9000 (PHP-FPM)
-EXPOSE 9000
-
-# Lancer PHP-FPM
-CMD ["php-fpm"]
+# Commande de lancement
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
