@@ -2,7 +2,7 @@
 @extends('layouts.app')
 
 @section('content')
-<h1 class="h4 mb-3">Articles de {{ $user->name }}</h1>
+<h1 class="h4 mb-3">Publications de {{ $user->name }}</h1>
 
 @if($articles->isEmpty())
   <div class="alert alert-info">Aucun article publié.</div>

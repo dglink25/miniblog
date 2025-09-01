@@ -64,4 +64,14 @@ class AnnouncementController extends Controller
         ]);
         return back()->with('success','Statut publié modifié');
     }
+    public function dismiss(Announcement $annonce){
+    // Exemple : sauvegarder l'info en base pour l'utilisateur connecté
+    // Ici je suppose que tu as une table pivot "announcement_user" 
+    // ou une colonne pour marquer les annonces ignorées par un user
+
+        auth()->user()->dismissedAnnouncements()->attach($annonce->id);
+
+        return back()->with('success', 'Annonce masquée avec succès 👍');
+    }
+
 }

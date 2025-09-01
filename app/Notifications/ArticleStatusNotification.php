@@ -10,7 +10,7 @@ class ArticleStatusNotification extends Notification
 {
     use Queueable;
     public function __construct(public Article $article, public string $status, public ?string $reason=null){}
-    public function via($notifiable){ return ['mail','database','broadcast']; }
+    public function via($notifiable){ return ['mail','database']; }
     public function toMail($notifiable){
         return (new MailMessage)
             ->subject('Statut de votre article')

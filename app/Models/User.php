@@ -79,17 +79,27 @@ class User extends Authenticatable{
         return $this->is_admin; // true si admin
     }
     public function subscription(){ return $this->hasMany(\App\Models\Subscription::class); }
+
+    public function subscriptions(){
+        return $this->hasMany(\App\Models\Subscription::class);
+    }
+
     public function activeSubscription(){
-        return $this->subscription()->where('status','active')
-            ->where('starts_at','<=',now())->where('ends_at','>=',now())
-            ->latest()->first();
+        return $this->subscriptions()
+            ->where('status','active')
+            ->where('ends_at','>', now())
+            ->latest('ends_at')->first();
     }
+
     public function canPublish(): bool {
-        $setting = \App\Models\SiteSetting::current();
-        $trialDays = $setting->trial_days ?? 50;
-        $inTrial = $this->created_at->addDays($trialDays)->isFuture();
-        return $inTrial || (bool)$this->activeSubscription();
+        return (bool) $this->activeSubscription();
     }
+
+    public function dismissedAnnouncements(){
+        return $this->belongsToMany(Announcement::class, 'announcements')
+            ->withTimestamps();
+    }
+
 
 
 }

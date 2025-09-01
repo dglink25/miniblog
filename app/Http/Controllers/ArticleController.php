@@ -13,10 +13,8 @@ use Purifier;
 use App\Models\Announcement;
 
 
-class ArticleController extends Controller
-{
-    public function __construct()
-    {
+class ArticleController extends Controller{
+    public function __construct(){
         // Accès public pour index/show ; reste protégé
         $this->middleware('auth')->except(['index', 'show']);
     }
@@ -183,6 +181,8 @@ class ArticleController extends Controller
             ->paginate(9);
         return view('users.articles', compact('user','articles'));
     }
+    
+
 
 
 }

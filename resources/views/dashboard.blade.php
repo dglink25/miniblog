@@ -7,7 +7,7 @@
     <div class="p-5 mb-4 bg-light rounded-3 shadow-sm position-relative overflow-hidden hero">
     <div class="row align-items-center">
         <div class="col-lg-8">
-        <h1 class="display-5 fw-bold mb-2 text-dark">🎉 Bienvenue, {{ Auth::user()->name }} !</h1>
+        <h1 class="display-5 fw-bold mb-2 text-dark">Bienvenue, {{ Auth::user()->name }} !</h1>
         <p class="lead mb-3 justify text-dark">
             Heureux de vous voir sur <strong>Miniblog de DGLINK</strong> — la plateforme pour 
             <strong>publier</strong>, <strong>partager</strong> et <strong>découvrir</strong> des contenus (articles,
@@ -27,12 +27,12 @@
   <div class="row g-4 mt-4">
     @php
       $features = [
-        ['📖','Publier des articles','Rédigez avec un éditeur riche (titres, images, tableaux…).','bg-light'],
-        ['🔔','Notifications en temps réel','Mail + sur le site (son de cloche, badge).','bg-primary text-white'],
-        ['🎥','Annonces avec médias','Image, lien YouTube, TikTok, vidéo MP4 intégrée.','bg-success text-white'],
-        ['👥','Abonnements','Suivez des auteurs et soyez alerté de leurs publications.','bg-warning'],
-        ['🔍','Recherche avancée','Trouvez rapidement un contenu par titre/texte.','bg-info text-dark'],
-        ['⭐','Notes & favoris','Note unique par article + liste de favoris.','bg-danger text-white'],
+        ['','Publier des articles','Rédigez avec un éditeur riche (titres, images, tableaux…).','bg-light'],
+        ['','Notifications en temps réel','Mail + sur le site (son de cloche, badge).','bg-primary text-white'],
+        ['','Annonces avec médias','Image, lien YouTube, TikTok, vidéo MP4 intégrée.','bg-success text-white'],
+        ['','Abonnements','Suivez des auteurs et soyez alerté de leurs publications.','bg-warning'],
+        ['','Recherche avancée','Trouvez rapidement un contenu par titre/texte.','bg-info text-dark'],
+        ['','Notes & favoris','Note unique par article + liste de favoris.','bg-danger text-white'],
       ];
     @endphp
 
@@ -54,7 +54,7 @@
     <div class="col-lg-6 reveal slide-left">
       <div class="card shadow-sm border-0 h-100 bg-light">
         <div class="card-body">
-          <h3 class="h5 fw-bold mb-3">🎯 Pourquoi utiliser Miniblog de DGLINK ?</h3>
+          <h3 class="h5 fw-bold mb-3">Pourquoi utiliser Miniblog de DGLINK ?</h3>
           <p class="justify">
             Plateforme <strong>rapide</strong>, <strong>intuitive</strong> et <strong>sécurisée</strong>.
           </p>
@@ -70,12 +70,12 @@
     <div class="col-lg-6 reveal slide-right">
       <div class="card shadow-sm border-0 h-100 bg-secondary text-white">
         <div class="card-body">
-          <h3 class="h5 fw-bold mb-3">💡 Pourquoi nous choisir ?</h3>
+          <h3 class="h5 fw-bold mb-3">Pourquoi nous choisir ?</h3>
           <ul class="list-unstyled mb-0">
-            <li class="mb-2">✔️ Interface claire & 100% responsive</li>
-            <li class="mb-2">✔️ Données protégées & rôles admin</li>
-            <li class="mb-2">✔️ Support réactif & mises à jour régulières</li>
-            <li class="mb-2">✔️ Communauté en croissance</li>
+            <li class="mb-2">Interface claire & 100% responsive</li>
+            <li class="mb-2">Données protégées & rôles admin</li>
+            <li class="mb-2">Support réactif & mises à jour régulières</li>
+            <li class="mb-2">Communauté en croissance</li>
           </ul>
         </div>
       </div>
@@ -89,16 +89,16 @@
       <div class="row g-4">
         <div class="col-md-6">
           <ul class="list-group list-group-flush">
-            <li class="list-group-item">📱 Application mobile Android & iOS</li>
-            <li class="list-group-item">🤝 Plus d’interactions (likes, partages)</li>
-            <li class="list-group-item">💳 Paiements (abonnements) intégrés</li>
+            <li class="list-group-item">Application mobile Android & iOS</li>
+            <li class="list-group-item">Plus d’interactions (likes, partages)</li>
+            <li class="list-group-item">Paiements (abonnements) intégrés</li>
           </ul>
         </div>
         <div class="col-md-6">
           <ul class="list-group list-group-flush">
             <li class="list-group-item">📊 Statistiques détaillées des articles</li>
-            <li class="list-group-item">🧩 Intégrations médias améliorées</li>
-            <li class="list-group-item">🛡️ Outils de modération avancés</li>
+            <li class="list-group-item">Intégrations médias améliorées</li>
+            <li class="list-group-item">Outils de modération avancés</li>
           </ul>
         </div>
       </div>
@@ -109,7 +109,7 @@
   <div class="row mt-5 g-4">
     <div class="col-lg-8 reveal slide-left">
       <div class="alert alert-info shadow-sm m-0">
-        💡 Astuce : Ajoutez des <strong>images</strong>, <strong>tableaux</strong> et <strong>vidéos</strong> dans l’éditeur.
+        Astuce : Ajoutez des <strong>images</strong>, <strong>tableaux</strong> et <strong>vidéos</strong> dans l’éditeur.
       </div>
     </div>
     <div class="col-lg-4 reveal slide-right">

@@ -2,7 +2,7 @@
 @extends('layouts.app')
 @section('content')
 <h1 class="h4 mb-3">{{ $annonce->exists ? 'Modifier' : 'Créer' }} une annonce</h1>
-<form method="POST" action="{{ $annonce->exists ? route('annonces.update',$annonce) : route('annonces.store') }}">
+<form method="POST" action="{{ $annonce->exists ? route('admin.annonces.update', $annonce) : route('admin.annonces.store') }}">
   @csrf @if($annonce->exists) @method('PUT') @endif
   <div class="mb-3">
     <label class="form-label">Titre</label>

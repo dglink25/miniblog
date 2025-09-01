@@ -1,21 +1,26 @@
 @extends('layouts.app')
+
 @section('content')
-<h1 class="h4 mb-3">Activer l’abonnement</h1>
-@if(!$lastPending)
-  <div class="alert alert-info">Aucune souscription à valider.</div>
-@else
-  <div class="card">
-    <div class="card-body">
-      <p>Plan : <strong>{{ $lastPending->plan->name }}</strong></p>
-      <form method="POST" action="{{ route('subscriptions.verifyCode') }}">
-        @csrf
-        <div class="mb-3">
-          <label class="form-label">Code reçu par e-mail</label>
-          <input class="form-control" name="code" required>
-        </div>
-        <button class="btn btn-primary">Valider</button>
-      </form>
-    </div>
+<h1 class="h4 mb-3">Activer mon abonnement</h1>
+
+@if($errors->any())
+  <div class="alert alert-danger">{{ $errors->first() }}</div>
+@endif
+
+@if($lastPending)
+  <div class="alert alert-info">
+    Abonnement en attente : <strong>{{ $lastPending->plan->name }}</strong>.
+    Entrez le code reçu par e-mail.
   </div>
 @endif
+
+<form method="POST" class="row gy-2 gx-2" action="{{ route('subscriptions.verifyCode') }}">
+  @csrf
+  <div class="col-12 col-md-6">
+    <input type="text" name="code" class="form-control" placeholder="CODE" required>
+  </div>
+  <div class="col-12 col-md-auto">
+    <button class="btn btn-success">Activer</button>
+  </div>
+</form>
 @endsection

@@ -1,44 +1,31 @@
-{{-- resources/views/admin/plans/index.blade.php --}}
 @extends('layouts.app')
-
 @section('content')
-<div class="container">
-    <h2>📦 Liste des Plans d'abonnement</h2>
-    <a href="{{ route('plans.create') }}" class="btn btn-primary mb-3">➕ Nouveau plan</a>
-
-    @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
-
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Nom</th>
-                <th>Durée (jours)</th>
-                <th>Prix (FCFA)</th>
-                <th>Statut</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        @forelse($plan as $p)
-            <tr>
-                <td>{{ $p->name }}</td>
-                <td>{{ $p->duration_days }}</td>
-                <td>{{ number_format($p->price, 0, ',', ' ') }}</td>
-                <td>{{ $p->is_active ? '✅ Actif' : '❌ Inactif' }}</td>
-                <td>
-                    <a href="{{ route('plans.edit', $p) }}" class="btn btn-sm btn-warning">✏️ Modifier</a>
-                    <form action="{{ route('plans.destroy', $p) }}" method="POST" class="d-inline">
-                        @csrf @method('DELETE')
-                        <button class="btn btn-sm btn-danger" onclick="return confirm('Supprimer ?')">🗑️ Supprimer</button>
-                    </form>
-                </td>
-            </tr>
-        @empty
-            <tr><td colspan="5">Aucun plan défini</td></tr>
-        @endforelse
-        </tbody>
-    </table>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4">Plans</h1>
+  <a href="{{ route('admin.plans.create') }}" class="btn btn-primary">Nouveau plan</a>
 </div>
+
+<table class="table table-sm align-middle">
+  <thead><tr>
+    <th>Nom</th><th>Prix</th><th>Durée</th><th>Provider</th><th>Actif</th><th></th>
+  </tr></thead>
+  <tbody>
+  @foreach($plans as $p)
+    <tr>
+      <td>{{ $p->name }}</td>
+      <td>{{ number_format($p->price,0,' ',' ') }} XOF</td>
+      <td>{{ $p->duration_days }} j</td>
+      <td>{{ strtoupper($p->payment_provider) }}</td>
+      <td>{!! $p->is_active?'<span class="badge bg-success">oui</span>':'<span class="badge bg-secondary">non</span>' !!}</td>
+      <td class="text-end">
+        <a class="btn btn-sm btn-outline-secondary" href="{{ route('admin.plans.edit',$p) }}">Éditer</a>
+        <form action="{{ route('admin.plans.destroy',$p) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer ?')">
+          @csrf @method('DELETE')
+          <button class="btn btn-sm btn-outline-danger">Supprimer</button>
+        </form>
+      </td>
+    </tr>
+  @endforeach
+  </tbody>
+</table>
 @endsection

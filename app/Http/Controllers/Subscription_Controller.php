@@ -4,156 +4,75 @@ namespace App\Http\Controllers;
 
 use App\Models\Plan;
 use App\Models\Subscription;
-use App\Models\SiteSetting;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
+use App\Mail\SubscriptionCodeMail;
 
-class Subscription_Controller extends Controller
-{
-    public function plans() {
-        $plans = Plan::where('is_active', true)->orderBy('price')->get();
-        $user = auth()->user();
-        $active = $user?->activeSubscription();
-        $settings = SiteSetting::current();
-        $trialEndsAt = $user ? $user->created_at->copy()->addDays($settings->trial_days ?? 50) : null;
-
-        return view('subscriptions/plans', compact('plans','active','trialEndsAt','settings'));
+class Subscription_Controller extends Controller{
+    public function plans(){
+        $active = auth()->check() ? auth()->user()->activeSubscription() : null;
+        $plans = Plan::active()->orderBy('price')->get();
+        return view('subscriptions.plans', compact('plans','active'));
     }
 
-    public function checkout(Request $request, Plan $plan){
-        // 1️⃣ Vérification plan
-        if (!$plan) {
-            return back()->withErrors('Plan invalide.');
+    public function checkout(Request $r, Plan $plan){
+        $this->authorize('purchase', $plan);
+
+        if (!$plan->is_active || $plan->payment_provider !== 'kia' || empty($plan->payment_link)) {
+            return back()->withErrors('Plan non disponible au paiement.');
         }
 
-        // 2️⃣ Création subscription "pending"
-        $code = strtoupper(Str::random(8));
+        $articleId = $r->input('article_id', null); // facultatif
+
         $sub = Subscription::create([
             'user_id' => auth()->id(),
             'plan_id' => $plan->id,
-            'starts_at' => now(),
-            'ends_at' => now()->addDays($plan->duration_days),
             'status' => 'pending',
-            'verification_code' => $code,
+            'source' => 'kia',
+            'metadata' => [
+                'ua' => $r->userAgent(),
+                'ip' => $r->ip(),
+                'article_id' => $articleId,
+            ],
         ]);
 
-        // 3️⃣ Callback sécurisé (ngrok pour dev / HTTPS prod)
-        $callback = config('app.env') === 'production'
-            ? route('fedapay.callback')
-            : 'https://93d4b6a8a2c4.ngrok-free.app/fedapay/callback';
+        $successUrl = $articleId 
+            ? route('boost.success', ['article' => $articleId], true) // URL absolue
+            : route('subscriptions.plans', [], true);                 // URL absolue
 
-        $desc = 'Abonnement ' . $plan->name . ' (#' . $sub->id . ')';
+        $cancelUrl = route('payments.history', [], true);            // URL absolue
 
-        try {
-            // 4️⃣ Appel API FedaPay
-            $res = Http::withToken(config('services.fedapay.secret'))
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->post(config('services.fedapay.base') . '/transactions', [
-                    'amount' => $plan->price * 100, // en centimes
-                    'currency' => config('services.fedapay.currency', 'XOF'),
-                    'description' => $desc,
-                    'callback_url' => $callback,
-                    'metadata' => [
-                        'subscription_id' => $sub->id,
-                        'user_id' => auth()->id(),
-                    ],
-                ]);
 
-            // 5️⃣ Logging pour debug
-            \Log::debug('FedaPay request', [
-                'url' => config('services.fedapay.base') . '/transactions',
-                'payload' => [
-                    'amount' => $plan->price * 100,
-                    'currency' => config('services.fedapay.currency', 'XOF'),
-                    'description' => $desc,
-                    'callback_url' => $callback,
-                    'metadata' => [
-                        'subscription_id' => $sub->id,
-                        'user_id' => auth()->id(),
-                    ],
-                ],
-            ]);
-            \Log::debug('FedaPay response', [
-                'status' => $res->status(),
-                'body' => $res->body(),
-                'headers' => $res->headers(),
-            ]);
+        
+        $query = http_build_query([
+            'reference' => $sub->id,
+            'success_url' => $successUrl,
+            'cancel_url' => $cancelUrl,
+        ]);
 
-            // 6️⃣ Vérification réponse
-            if ($res->failed()) {
-                $sub->delete();
-                $msg = $res->body() ?: 'Erreur paiement. Réessaie plus tard.';
-                return back()->withErrors($msg);
-            }
-
-            $data = $res->json();
-
-            // 7️⃣ Récupération URL paiement
-            $checkoutUrl = $data['checkout_url'] ?? ($data['data']['url'] ?? null);
-            if (!$checkoutUrl) {
-                $sub->delete();
-                return back()->withErrors('Paiement indisponible. Essaie plus tard.');
-            }
-
-            // 8️⃣ Redirection sécurisée vers FedaPay
-            return redirect()->away($checkoutUrl);
-
-        } catch (\Exception $e) {
-            // 9️⃣ Gestion exception réseau / API
-            $sub->delete();
-            \Log::error('FedaPay exception', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return back()->withErrors('Erreur serveur paiement. Réessaie plus tard.');
-        }
+        return redirect()->away($plan->payment_link.'?'.$query);
     }
 
 
 
-    // Webhook/callback FedaPay
-    public function fedapayCallback(Request $r) {
-        $payload = $r->all();
 
-        $status = $payload['status'] ?? $payload['data']['status'] ?? null;
-        $subscriptionId = $payload['metadata']['subscription_id'] ?? $payload['data']['metadata']['subscription_id'] ?? null;
-        $transactionRef = $payload['reference'] ?? $payload['data']['reference'] ?? null;
-        $amount = $payload['amount'] ?? $payload['data']['amount'] ?? null;
-
-        if (!$subscriptionId) return response()->json(['ok'=>true]);
-
-        $sub = Subscription::find($subscriptionId);
-        if (!$sub) return response()->json(['ok'=>true]);
-
-        // Paiement réussi
-        if ($status === 'paid' || $status === 'approved' || $status === 'succeeded') {
-            $sub->update([
-                'payment_ref'=>$transactionRef,
-                'paid_amount'=>$amount,
-                'status'=>'pending', // reste pending jusqu'à code
-            ]);
-
-            // Envoi du code par e-mail
-            Mail::to($sub->user->email)->send(new \App\Mail\SubscriptionCodeMail($sub));
-        }
-
-        return response()->json(['ok'=>true]);
+    public function verifyForm()
+    {
+        $lastPending = auth()->user()->subscriptions()->where('status','pending')->latest()->first();
+        return view('subscriptions.verify', compact('lastPending'));
     }
 
-
-    public function verifyForm() {
-        $lastPending = auth()->user()->subscription()->where('status','pending')->latest()->first();
-        return view('subscription/verify', compact('lastPending'));
-    }
-
-    public function verifyCode(Request $r) {
+    public function verifyCode(Request $r){
         $r->validate(['code'=>'required|string']);
-        $sub = auth()->user()->subscription()->where('status','pending')->latest()->first();
+        $sub = auth()->user()->subscriptions()->where('status','pending')->latest()->first();
         if (!$sub) return back()->withErrors('Aucune souscription en attente.');
 
-        if (trim($r->code) === $sub->verification_code) {
-            $sub->update(['status'=>'active']);
-            return redirect()->route('articles.index')->with('success','Abonnement activé 👍');
+        if (trim($r->code) !== $sub->verification_code) {
+            return back()->withErrors('Code invalide.');
         }
-        return back()->withErrors('Code invalide.');
+
+        $sub->activateNow();
+        return redirect()->route('articles.index')->with('success','Abonnement activé!');
     }
 }

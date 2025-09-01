@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Providers;
+use Illuminate\Support\Facades\Gate;
 
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
@@ -18,10 +19,13 @@ class AuthServiceProvider extends ServiceProvider
     /**
      * Register any authentication / authorization services.
      */
-    public function boot(): void
-    {
-        $this->registerPolicies();
+    public function boot(): void{
+        Gate::define('admin', function ($user) {
+            return (bool) $user->is_admin; // colonne bool dans users
+        });
 
-        // Tu peux définir des Gates ici si besoin
+        Gate::define('purchase', function ($user, \App\Models\Plan $plan) {
+            return $plan->is_active;
+        });
     }
 }

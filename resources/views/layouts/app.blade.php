@@ -18,6 +18,42 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
   <style>
+    .card-img-fixed {
+      width: 100%;
+      height: 200px; /* ajuste la hauteur fixe selon ton design */
+      object-fit: cover; /* garde le ratio et coupe le surplus */
+      object-position: center; /* centre l’image */
+      border-radius: 6px; /* optionnel, pour garder arrondi */
+    }
+
+    .article-image {
+      object-fit: cover;
+      width: 100%;
+      border-radius: 8px;
+    }
+
+    /* Mobile */
+    @media (max-width: 576px) {
+      .article-image {
+        height: 180px;
+      }
+    }
+
+    /* Tablette */
+    @media (min-width: 577px) and (max-width: 992px) {
+      .article-image {
+        height: 300px;
+      }
+    }
+
+    /* Desktop */
+    @media (min-width: 993px) {
+      .article-image {
+        height: 450px;
+      }
+    }
+
+
     .pointer { cursor:pointer; }
     #toTop { position: fixed; bottom: 20px; right: 20px; display: none; z-index: 1031; }
     .nav-link .badge-notif {
@@ -25,6 +61,8 @@
     }
     .dropdown-menu-notifs { max-height: 320px; overflow:auto; width: 320px; }
   </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
 </head>
 <body class="d-flex flex-column min-vh-100 bg-light">
 
@@ -61,21 +99,69 @@
           {{-- Abonnements / Plans --}}
           <li class="nav-item"><a class="nav-link" href="{{ route('subscriptions.plans') }}">Abonnements</a></li>
 
+          {-- HIstorique des paiement --}}
+          <li class="nav-item"><a class="nav-link" href="{{ route('payments.history') }}">HIstorique de mes paiements</a></li>
+
           {{-- Espace Admin (si admin) --}}
-          @if($user->is_admin ?? false)
+          @if(auth()->user()->is_admin ?? false)
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" id="adminDrop" data-bs-toggle="dropdown" aria-expanded="false">
-                Espace Admin
-              </a>
-              <ul class="dropdown-menu" aria-labelledby="adminDrop">
-                <li><a class="dropdown-item" href="{{ route('admin.dashboard') }}">Tableau de bord</a></li>
-                <li><a class="dropdown-item" href="{{ route('annonces.index') }}">Annonces</a></li>
-                <li><a class="dropdown-item" href="{{ route('plans.index') }}">Plans d’abonnement</a></li>
-                <li><a class="dropdown-item" href="{{ route('admin.suggestions.index') }}">Suggestions</a></li>
-                {{-- Ajoute ici la page d’articles en attente/validés si tu as un controller dédié --}}
-              </ul>
+                <a class="nav-link dropdown-toggle" href="#" id="adminDrop" data-bs-toggle="dropdown" aria-expanded="false">
+                    Espace Admin
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="adminDrop">
+                    {{-- Tableau de bord admin --}}
+                    <li>
+                        <a class="dropdown-item" href="{{ route('admin.dashboard') }}">
+                            Tableau de bord
+                        </a>
+                    </li>
+
+                    {{-- Gestion des annonces --}}
+                    <li>
+                        <a class="dropdown-item" href="{{ route('admin.annonces.index') }}">
+                            Annonces
+                        </a>
+                        
+                    </li>
+
+                    {{-- Gestion des plans d’abonnement --}}
+                    <li>
+                        <a class="dropdown-item" href="{{ route('admin.plans.index') }}">
+                            Plans d’abonnement
+                        </a>
+                    </li>
+
+                    {{-- Gestion des suggestions --}}
+                    <li>
+                        <a class="dropdown-item" href="{{ route('admin.suggestions.index') }}">
+                            Suggestions
+                        </a>
+                    </li>
+
+                    {{-- Gestion des utilisateurs --}}
+                    <li>
+                        <a class="dropdown-item" href="{{ route('admin.users.index') }}">
+                            Utilisateurs
+                        </a>
+                    </li>
+
+                    {{-- Gestion des articles (validés/en attente) --}}
+                    <li>
+                        <a class="dropdown-item" href="{{ route('admin.articles.index') }}">
+                            Articles
+                        </a>
+                    </li>
+
+                    {{-- Historique des abonnements --}}
+                    <li>
+                        <a class="dropdown-item" href="{{ route('admin.subscriptions.index') }}">
+                            Abonnements
+                        </a>
+                    </li>
+                </ul>
             </li>
-          @endif
+        @endif
+
         @endauth
       </ul>
 

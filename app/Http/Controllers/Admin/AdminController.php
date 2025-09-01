@@ -9,11 +9,11 @@ use App\Notifications\ArticleStatusNotification;
 use Illuminate\Http\Request;
 use App\Notifications\ArticleRejectedNotification;
 use App\Notifications\FollowedAuthorPublishedNotification;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ArticleRejectedMail;
 
-class AdminController extends Controller
-{
-    public function __construct()
-    {
+class AdminController extends Controller{
+    public function __construct(){
         $this->middleware(function ($request, $next) {
             if (!auth()->user() || !auth()->user()->is_admin) {
                 abort(403, 'Accès refusé');
@@ -21,8 +21,6 @@ class AdminController extends Controller
             return $next($request);
         });
     }
-
-
 
     public function dashboard(){
         $pending = Article::pending()->with('user')->latest()->paginate(10);
@@ -71,10 +69,11 @@ class AdminController extends Controller
         $data = $request->validate(['reason' => 'required|string|min:1']);
         $article->update(['status'=>'rejected','rejection_reason'=>$data['reason'],'is_published'=>false]);
 
-        // Notifier l\'auteur avec motif
         $article->user->notify(new ArticleStatusNotification($article, 'rejeté', $data['reason']));
         Mail::to($article->user->email)
-            ->send(new ArticleStatusNotification($article, 'rejeté', $request->reason));
+            ->send(new ArticleRejectedMail($article, $data['reason']));
+        //Mail::to($article->user->email)
+            //->send(new ArticleStatusNotification($article, 'rejeté', $request->reason));
         
         return back()->with('success','Article rejeté.');
     }
@@ -97,6 +96,15 @@ class AdminController extends Controller
 
         return back()->with('success', $article->pinned ? 'Article épinglé.' : 'Article désépinglé.');
     }
+    public function index(){
+        if (!auth()->user() || !auth()->user()->is_admin) {
+            abort(403, 'Accès interdit');
+        }
+
+        $users = User::all();
+        return view('admin.users.index', compact('users'));
+    }
+
 
 
 

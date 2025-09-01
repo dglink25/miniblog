@@ -14,7 +14,7 @@
   <div class="col-12">
   <label class="form-label">Contenu de la publication</label>
   {{-- Le textarea sera enrichi par TinyMCE --}}
-  <textarea id="content-editor" name="content" rows="10" class="form-control" required>
+  <textarea id="" name="content" rows="10" class="form-control" required>
     {{ old('content', $article->content ?? '') }}
   </textarea>
   @error('content') 

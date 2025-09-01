@@ -24,4 +24,7 @@ class Media extends Model
     {
         return str_contains($this->mime_type, 'video');
     }
+    public function isAudio(): bool{
+        return str_starts_with($this->mime_type, 'audio/');
+    }
 }
