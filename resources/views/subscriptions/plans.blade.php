@@ -6,13 +6,22 @@
 @if(session('error')) <div class="alert alert-danger">{{ session('error') }}</div> @endif
 
 @auth
-  @if($active)
-    <div class="alert alert-success">
-      Abonnement actif : <strong>{{ $active->plan->name }}</strong>
-      — expire le {{ $active->ends_at->format('d/m/Y') }}
-    </div>
-  @endif
+    @php
+        $user = auth()->user();
+        // Forcer Carbon si ce n'est pas déjà un datetime
+        $trialEnds = \Carbon\Carbon::parse($user->trial_ends_at);
+        $daysLeft = now()->diffInDays($trialEnds); // entier
+    @endphp
+
+    @if($user->trial_ends_at)
+        <div class="bg-blue-100 border border-blue-300 text-blue-700 px-4 py-3 rounded mb-4">
+            Votre essai gratuit expire le 
+            <strong>{{ $trialEnds->format('d/m/Y') }}</strong>
+        </div>
+    @endif
 @endauth
+
+
 
 <div class="row g-3">
   @foreach($plans as $plan)

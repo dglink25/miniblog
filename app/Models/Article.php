@@ -5,9 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use App\Models\ArticleReaction;
 
-class Article extends Model
-{
+class Article extends Model{
     use HasFactory;
 
     protected $fillable = [
@@ -65,6 +65,11 @@ class Article extends Model
     public function getStatusLabelAttribute(): string{
         return $this->is_published ? 'Publié' : 'En attente';
     }
+
+    public function reactions(){
+        return $this->hasMany(ArticleReaction::class);
+    }
+
 
 
 }

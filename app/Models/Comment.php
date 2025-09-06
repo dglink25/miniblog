@@ -29,6 +29,9 @@ class Comment extends Model
             && $this->created_at->gt(now()->subMinutes(15));
     }
 
-
-
 }
+
+class CommentReaction extends Model {
+    protected $fillable = ['comment_id','user_id','type'];
+}
+

@@ -85,13 +85,33 @@
 
         @auth
           {{-- Nouvelle publication (protégée par le middleware publish.access côté routes) --}}
-          <li class="nav-item"><a class="nav-link" href="{{ route('articles.create') }}">Nouvelle publication</a></li>
+
+          @php
+              $user = auth()->user();
+              $canPublish = false;
+
+              // Vérifie si l'utilisateur a un abonnement actif
+              if ($user->activeSubscription()) {
+                  $canPublish = true;
+              }
+              // Vérifie si l'utilisateur est encore en essai gratuit
+              elseif ($user->trial_ends_at && now()->lessThanOrEqualTo($user->trial_ends_at)) {
+                  $canPublish = true;
+              }
+          @endphp
+
+          @if($canPublish)
+              <li class="nav-item">
+                  <a class="nav-link" href="{{ route('articles.create') }}">Créer</a>
+              </li>
+          @endif
+
 
           {{-- Mes publications --}}
-          <li class="nav-item"><a class="nav-link" href="{{ route('articles.mine') }}">Mes publications</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ route('articles.mine') }}">Pour moi</a></li>
 
           {{-- Favoris --}}
-          <li class="nav-item"><a class="nav-link" href="{{ route('favorites.index') }}">Mes favoris</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ route('favorites.index') }}">Favoris</a></li>
 
           {{-- Suggestions (utilisateur → admin) --}}
           <li class="nav-item"><a class="nav-link" href="{{ route('suggestions.create') }}">Suggestion</a></li>
@@ -100,7 +120,7 @@
           <li class="nav-item"><a class="nav-link" href="{{ route('subscriptions.plans') }}">Abonnements</a></li>
 
           {-- HIstorique des paiement --}}
-          <li class="nav-item"><a class="nav-link" href="{{ route('payments.history') }}">HIstorique de mes paiements</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ route('payments.history') }}">Historique</a></li>
 
           {{-- Espace Admin (si admin) --}}
           @if(auth()->user()->is_admin ?? false)
@@ -145,11 +165,8 @@
                         </a>
                     </li>
 
-                    {{-- Gestion des articles (validés/en attente) --}}
                     <li>
-                        <a class="dropdown-item" href="{{ route('admin.articles.index') }}">
-                            Articles
-                        </a>
+                        <a href="{{ route('admin.settings.edit') }}" class="dropdown-item">Réglages</a>
                     </li>
 
                     {{-- Historique des abonnements --}}

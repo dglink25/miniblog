@@ -26,8 +26,12 @@ use App\Http\Controllers\TinyMCEController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AnnouncementController;
-
+use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\UserArticleController;
+
+Route::get('/admin/settings/edit', [SettingController::class, 'edit'])->name('admin.settings.edit');
+Route::post('/admin/settings/update', [SettingController::class, 'update'])->name('admin.settings.update');
+
 
 Route::get('/utilisateur/{user}/articles', [UserArticleController::class, 'index'])
     ->name('user.article');
@@ -242,4 +246,10 @@ Route::get('/dashboard', fn() => view('dashboard'))->middleware('auth')->name('d
 
 // HISTORIQUES PAYEMENTS
 Route::get('/mes-paiements', [PaymentController::class, 'history'])->name('payments.history');
+
+Route::post('/articles/{article}/react', [ArticleController::class,'react'])->name('articles.react');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin/settings', [SettingController::class, 'edit'])->name('admin.settings.edit');
+    Route::post('/admin/settings', [SettingController::class, 'update'])->name('admin.settings.update');
+});
 

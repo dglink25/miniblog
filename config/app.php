@@ -58,6 +58,8 @@ return [
     'cipher' => 'AES-256-CBC',
 
     'key' => env('APP_KEY'),
+    
+    'trial_days' => env('TRIAL_DAYS', 90),
 
     'previous_keys' => [
         ...array_filter(

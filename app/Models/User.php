@@ -20,7 +20,13 @@ class User extends Authenticatable{
         'name',
         'email',
         'password',
+        'trial_ends_at',
+        
     ];
+    protected $casts = [
+        'trial_ends_at' => 'datetime',
+    ];
+
 
     /**
      * The attributes that should be hidden for serialization.
@@ -99,6 +105,13 @@ class User extends Authenticatable{
         return $this->belongsToMany(Announcement::class, 'announcements')
             ->withTimestamps();
     }
+
+    
+    public function hasActiveTrial(): bool{
+        return $this->trial_ends_at && now()->lessThan($this->trial_ends_at);
+    }
+
+
 
 
 

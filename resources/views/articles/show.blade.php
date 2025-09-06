@@ -37,7 +37,7 @@
   @endauth
 
   <div class="text-muted mb-3">
-    Publiée par <strong><a href="{{ route('user.articles', $article->user->id) }}">{{ $article->user->name }}</a></strong>
+    Publiée par <strong><a href="{{ route('user.article', $article->user->id) }}">{{ $article->user->name }}</a></strong>
      {{ $article->created_at->diffForHumans() }}
     @if($article->updated_at->gt($article->created_at))
        modifié {{ $article->updated_at->diffForHumans() }}
@@ -86,6 +86,14 @@
   $url = urlencode(request()->fullUrl());
   $title = urlencode($article->title);
 @endphp
+@auth
+  <form action="{{ route('articles.react', $article) }}" method="POST">
+    @csrf
+    <button name="type" value="like">
+      ❤️ {{ $article->reactions()->where('type','like')->count() }}
+    </button>
+  </form>
+@endauth
 
 <div class="d-flex align-items-center gap-2 flex-wrap my-3">
   <a class="btn btn-sm text-white" style="background:#1877F2" target="_blank"
@@ -128,9 +136,7 @@
                 <button type="submit" class="btn btn-success">Booster ma publication</button>
             </form>
         @else
-            <a href="{{ route('subscriptions.plans') }}" class="btn btn-primary">
-              Acheter un boost
-            </a>
+            
         @endif
     @endif
   @endauth
@@ -163,6 +169,7 @@
       {{ $c->created_at->diffForHumans() }}
     </div>
     <div>{{ $c->body }}</div>
+
     {{-- Boutons d’action --}}
     @if($c->canEditOrDelete())
       <div class="mt-2">
@@ -179,27 +186,27 @@
       </div>
     @endif
     <div class="mt-2 d-flex flex-wrap gap-2">
-  @php
-    $reactions = [
-      'like' => '👍',
-      'dislike' => '👎',
-      'love' => '❤️',
-      'laugh' => '😂',
-      'angry' => '😡',
-      'sad' => '😢',
-    ];
-  @endphp
+      @php
+        $reactions = [
+          'like' => '👍',
+          'dislike' => '👎',
+          'love' => '❤️',
+          'laugh' => '😂',
+          'angry' => '😡',
+          'sad' => '😢',
+        ];
+      @endphp
 
-  @foreach ($reactions as $type => $emoji)
-    <form action="{{ route('comments.react', $c) }}" method="POST" class="d-inline">
-      @csrf
-      <input type="hidden" name="type" value="{{ $type }}">
-      <button class="btn btn-sm btn-outline-secondary">
-        {{ $emoji }} {{ $c->reactions->where('type', $type)->count() }}
-      </button>
-    </form>
-  @endforeach
-</div>
+      @foreach ($reactions as $type => $emoji)
+        <form action="{{ route('comments.react', $c) }}" method="POST" class="d-inline">
+          @csrf
+          <input type="hidden" name="type" value="{{ $type }}">
+          <button class="btn btn-sm btn-outline-secondary">
+            {{ $emoji }} {{ $c->reactions->where('type', $type)->count() }}
+          </button>
+        </form>
+      @endforeach
+    </div>
 
     <!-- Bouton Répondre -->
     @auth

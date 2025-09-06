@@ -9,8 +9,25 @@
 <div class="d-flex align-items-center justify-content-between mb-3">
   <h1 class="h3 mb-0">Toutes les publications</h1>
   @auth
-    <a href="{{ route('articles.create') }}" class="btn btn-primary">Nouvelle publication</a>
-  @endauth
+    @php
+        $user = auth()->user();
+        $canPublish = false;
+
+        // Vérifie si l'utilisateur a un abonnement actif
+        if ($user->activeSubscription()) {
+            $canPublish = true;
+        }
+        // Vérifie si l'utilisateur est encore en essai gratuit
+        elseif ($user->trial_ends_at && now()->lessThanOrEqualTo($user->trial_ends_at)) {
+            $canPublish = true;
+        }
+    @endphp
+
+    @if($canPublish)
+            <a class="btn btn-primary" href="{{ route('articles.create') }}">Nouvelle publication</a>
+    @endif
+@endauth
+
 </div>
 
 {{-- Formulaire de recherche --}}

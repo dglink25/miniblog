@@ -55,7 +55,13 @@ class ArticleController extends Controller{
     }
 
     public function store(StoreArticleRequest $request): RedirectResponse{
-        // Données validées automatiquement
+        
+        if (! auth()->user()->hasActiveTrial() && ! auth()->user()->has_subscription) {
+            return redirect()->route('subscriptions.plans')
+                ->with('error', 'Votre essai gratuit est terminé. Souscrivez un abonnement pour continuer à publier.');
+        }
+
+
         $validated = $request->validated();
 
         $path = $request->file('image')
@@ -182,6 +188,17 @@ class ArticleController extends Controller{
         return view('users.articles', compact('user','articles'));
     }
     
+    public function react(Request $request, Article $article){
+        $request->validate(['type' => 'required|in:like,dislike']);
+
+        $article->reactions()->updateOrCreate(
+            ['user_id' => auth()->id()],
+            ['type' => $request->type]
+        );
+
+        return back()->with('success', "Réaction enregistrée !");
+    }
+
 
 
 
