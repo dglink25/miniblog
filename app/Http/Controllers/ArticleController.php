@@ -49,17 +49,11 @@ class ArticleController extends Controller{
         return view('articles.index', compact('articles','q','annonces'));
     }
 
-    public function create()
-    {
+    public function create(){
         return view('articles.create');
     }
 
     public function store(StoreArticleRequest $request): RedirectResponse{
-        
-        if (! auth()->user()->hasActiveTrial() && ! auth()->user()->has_subscription) {
-            return redirect()->route('subscriptions.plans')
-                ->with('error', 'Votre essai gratuit est terminé. Souscrivez un abonnement pour continuer à publier.');
-        }
 
 
         $validated = $request->validated();

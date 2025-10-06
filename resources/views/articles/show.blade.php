@@ -303,7 +303,7 @@
                                               placeholder="Partagez vos pensées...">{{ old('body') }}</textarea>
                                 </div>
                                 <button class="btn btn-primary hover-lift">
-                                    <i class="bi bi-send me-2"></i>Publier
+                                    <i class="bi bi-send me-2"></i>Commenter
                                 </button>
                             </form>
                         </div>

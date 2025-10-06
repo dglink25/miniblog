@@ -398,11 +398,9 @@
               }
           @endphp
 
-          @if($canPublish)
-              <li class="nav-item">
-                  <a class="nav-link" href="{{ route('articles.create') }}">Créer</a>
-              </li>
-          @endif
+          <li class="nav-item">
+            <a class="nav-link" href="{{ route('articles.create') }}">Créer</a>
+          </li>
 
           <li class="nav-item"><a class="nav-link" href="{{ route('articles.mine') }}">Pour moi</a></li>
           <li class="nav-item"><a class="nav-link" href="{{ route('favorites.index') }}">Favoris</a></li>
