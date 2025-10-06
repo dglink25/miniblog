@@ -100,9 +100,7 @@ class ArticleController extends Controller{
 
     public function show(Article $article){
         if (!$article->is_published) {
-            if (!auth()->check() || (auth()->id() !== $article->user_id && !auth()->user()->is_admin)) {
-                abort(404);
-            }
+            
         }
         $article->load(['user','comments.user']);
         return view('articles.show', compact('article'));
@@ -145,8 +143,7 @@ class ArticleController extends Controller{
             ->with('success', "L'article a été mis à jour.");
     }
 
-    public function destroy(Article $article): RedirectResponse
-    {
+    public function destroy(Article $article): RedirectResponse{
         $this->authorize('delete', $article);
 
 

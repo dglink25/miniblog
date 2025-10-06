@@ -194,7 +194,7 @@
             {{-- Status Badge --}}
             <div class="position-absolute top-0 end-0 m-3">
               <span class="badge bg-success bg-opacity-90 text-white">
-                <i class="bi bi-check-circle-fill me-1"></i>Validé
+                <i class="bi bi-check-circle-fill me-1"></i>Publié
               </span>
             </div>
           </div>
