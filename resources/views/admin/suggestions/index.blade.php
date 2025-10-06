@@ -9,7 +9,7 @@
         <thead>
             <tr>
                 <th>Auteur</th>
-                <th>Contenu</th>
+                <th>Objet</th>
                 <th>Status</th>
                 <th>Date</th>
                 <th>Actions</th>
@@ -19,7 +19,7 @@
         @forelse($items as $s)
             <tr>
                 <td>{{ $s->user->name ?? 'Utilisateur inconnu' }}</td>
-                <td>{{ Str::limit($s->content,50) }}</td>
+                <td>{{ Str::limit($s->subject,10) }}</td>
                 <td>{{ ucfirst($s->status) }}</td>
                 <td>{{ $s->created_at->diffForHumans() }}</td>
                 <td>

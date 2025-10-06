@@ -49,11 +49,17 @@ class ArticleController extends Controller{
         return view('articles.index', compact('articles','q','annonces'));
     }
 
-    public function create(){
+    public function create()
+    {
         return view('articles.create');
     }
 
     public function store(StoreArticleRequest $request): RedirectResponse{
+        
+        if (! auth()->user()->hasActiveTrial() && ! auth()->user()->has_subscription) {
+            return redirect()->route('subscriptions.plans')
+                ->with('error', 'Votre essai gratuit est terminé. Souscrivez un abonnement pour continuer à publier.');
+        }
 
 
         $validated = $request->validated();
@@ -100,7 +106,9 @@ class ArticleController extends Controller{
 
     public function show(Article $article){
         if (!$article->is_published) {
-            
+            if (!auth()->check() || (auth()->id() !== $article->user_id && !auth()->user()->is_admin)) {
+                abort(404);
+            }
         }
         $article->load(['user','comments.user']);
         return view('articles.show', compact('article'));
@@ -143,7 +151,8 @@ class ArticleController extends Controller{
             ->with('success', "L'article a été mis à jour.");
     }
 
-    public function destroy(Article $article): RedirectResponse{
+    public function destroy(Article $article): RedirectResponse
+    {
         $this->authorize('delete', $article);
 
 

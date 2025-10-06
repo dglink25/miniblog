@@ -6,7 +6,8 @@
     <h2>👁️ Détail de la suggestion</h2>
 
     <p><strong>Auteur :</strong> {{ $suggestion->user->name ?? 'Utilisateur inconnu' }}</p>
-    <p><strong>Contenu :</strong><br> {{ $suggestion->content }}</p>
+    <p><strong>Objet :</strong> {{ $suggestion->subject }}</p>
+    <p><strong>Contenu :</strong> {{ $suggestion->message }}</p>
     <p><strong>Status :</strong> {{ ucfirst($suggestion->status) }}</p>
     <p><strong>Date :</strong> {{ $suggestion->created_at->format('d/m/Y H:i') }}</p>
 
