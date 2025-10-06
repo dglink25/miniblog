@@ -30,5 +30,8 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts
 EXPOSE 10000
 ENV PORT=10000
 
+# Créer le lien de stockage Laravel
+RUN php artisan storage:link || true
+
 # Lancer Apache en mode foreground
 CMD ["apache2-foreground"]
