@@ -30,6 +30,13 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts
 EXPOSE 10000
 ENV PORT=10000
 
+# 🔧 Configurer les limites d’upload PHP à 100 Mo
+RUN echo "upload_max_filesize=200M" > /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "post_max_size=210M" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "memory_limit=512M" >> /usr/local/etc/php/conf.d/uploads.ini \
+    && echo "max_execution_time=300" >> /usr/local/etc/php/conf.d/uploads.ini
+
+
 # Créer le lien de stockage Laravel
 RUN php artisan storage:link || true
 
