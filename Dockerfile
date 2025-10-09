@@ -40,5 +40,8 @@ RUN echo "upload_max_filesize=200M" > /usr/local/etc/php/conf.d/uploads.ini \
 # Créer le lien de stockage Laravel
 RUN php artisan storage:link || true
 
+RUN php artisan media:restore
+RUN php artisan serve --host=0.0.0.0 --port=$PORT
+
 # Lancer Apache en mode foreground
 CMD ["apache2-foreground"]

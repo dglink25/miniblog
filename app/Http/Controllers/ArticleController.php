@@ -20,6 +20,20 @@ class ArticleController extends Controller{
     }
 
     public function index(Request $request){
+        $file = $request->file('image');
+        if ($file) {
+            $filename = time().'_'.$file->getClientOriginalName();
+
+            // Copier dans storage persistant
+            $file->storeAs('media', $filename);
+
+            // Copier dans public pour affichage immédiat
+            copy(storage_path('app/media/'.$filename), public_path('uploads/'.$filename));
+
+            // Sauvegarder le nom dans la base
+            $article->image = $filename;
+        }
+
         $q = $request->string('q')->toString();
 
         $articles = Article::with('user')
@@ -49,8 +63,7 @@ class ArticleController extends Controller{
         return view('articles.index', compact('articles','q','annonces'));
     }
 
-    public function create()
-    {
+    public function create(){
         return view('articles.create');
     }
 
@@ -105,6 +118,22 @@ class ArticleController extends Controller{
 
 
     public function show(Article $article){
+
+        // Exemple upload article
+        $file = $request->file('image');
+        if ($file) {
+            $filename = time().'_'.$file->getClientOriginalName();
+
+            // Copier dans storage persistant
+            $file->storeAs('media', $filename);
+
+            // Copier dans public pour affichage immédiat
+            copy(storage_path('app/media/'.$filename), public_path('uploads/'.$filename));
+
+            // Sauvegarder le nom dans la base
+            $article->image = $filename;
+        }
+
         if (!$article->is_published) {
             if (!auth()->check() || (auth()->id() !== $article->user_id && !auth()->user()->is_admin)) {
                 abort(404);
@@ -115,11 +144,26 @@ class ArticleController extends Controller{
     }
 
     public function edit(Article $article){
+        // Exemple upload article
+        $file = $request->file('image');
+        if ($file) {
+            $filename = time().'_'.$file->getClientOriginalName();
+
+            // Copier dans storage persistant
+            $file->storeAs('media', $filename);
+
+            // Copier dans public pour affichage immédiat
+            copy(storage_path('app/media/'.$filename), public_path('uploads/'.$filename));
+
+            // Sauvegarder le nom dans la base
+            $article->image = $filename;
+        }
         $this->authorize('update', $article);
         return view('articles.edit', compact('article'));
     }
 
     public function update(UpdateArticleRequest $request, Article $article): RedirectResponse{
+
         $this->authorize('update', $article);
 
         $data = $request->only('title','content');
@@ -151,8 +195,7 @@ class ArticleController extends Controller{
             ->with('success', "L'article a été mis à jour.");
     }
 
-    public function destroy(Article $article): RedirectResponse
-    {
+    public function destroy(Article $article): RedirectResponse{
         $this->authorize('delete', $article);
 
 
@@ -180,6 +223,21 @@ class ArticleController extends Controller{
 
     // app/Http/Controllers/ArticleController.php
     public function byUser(\App\Models\User $user){
+
+        // Exemple upload article
+        $file = $request->file('image');
+        $filename = time().'_'.$file->getClientOriginalName();
+
+        // Copier dans storage persistant
+        $file->storeAs('media', $filename);
+
+        // Copier dans public pour affichage immédiat
+        copy(storage_path('app/media/'.$filename), public_path('uploads/'.$filename));
+
+        // Sauvegarder le nom dans la base
+        $article->image = $filename;
+        $article->save();
+
         $articles = $user->articles()
             ->with(['media','user'])
             ->where('is_published', true)
@@ -198,8 +256,5 @@ class ArticleController extends Controller{
 
         return back()->with('success', "Réaction enregistrée !");
     }
-
-
-
 
 }
