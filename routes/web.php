@@ -29,6 +29,15 @@ use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\UserArticleController;
 
+
+Route::get('/googleb4554f24cec51de9.html', function () {
+    return response('google-site-verification: googleb4554f24cec51de9.html', 200)
+        ->header('Content-Type', 'text/plain');
+});
+
+
+
+
 Route::get('/admin/settings/edit', [SettingController::class, 'edit'])->name('admin.settings.edit');
 Route::post('/admin/settings/update', [SettingController::class, 'update'])->name('admin.settings.update');
 
