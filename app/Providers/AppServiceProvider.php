@@ -26,6 +26,17 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void{
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
+
+            config([
+                'mail.mailers.smtp.host' => 'smtp.gmail.com',
+                'mail.mailers.smtp.port' => 587,
+                'mail.mailers.smtp.encryption' => 'tls',
+                'mail.mailers.smtp.username' => env('MAIL_USERNAME'),
+                'mail.mailers.smtp.password' => env('MAIL_PASSWORD'),
+            ]);
+        }
+        else {
+            # code...
         }
     }
 

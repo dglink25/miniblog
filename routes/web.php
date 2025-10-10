@@ -124,6 +124,7 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function(){
     // Plans d'abonnement
     Route::resource('plans', AdminPlanController::class)->except(['show']);
 });
+// email
 
 Route::get('/user/{user}/articles', [ArticleController::class,'byUser'])->name('user.articles');
 Route::post('/articles/{article:slug}/rate', [ArticleRatingController::class,'store'])->name('articles.rate');

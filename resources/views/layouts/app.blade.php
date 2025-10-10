@@ -11,14 +11,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <meta name="description" content="Miniblog DGLINK - plateforme moderne pour partager des articles et actualités numériques.">
-  <meta name="keywords" content="Miniblog, DGLINK, blog, articles, actualités, technologie, développement web">
-  <meta name="author" content="DGLINK">
-  <meta property="og:title" content="Miniblog DGLINK">
-  <meta property="og:description" content="Découvrez les actualités et articles tech avec DGLINK.">
-  <meta property="og:image" content="https://miniblog-myrd.onrender.com/images/preview.png">
-  <meta property="og:url" content="https://miniblog-myrd.onrender.com">
-  <meta name="google-site-verification" content="0oIrLHPD7rgiKe7goBlph5Ss8XYvNWQNaGJtA5717PM" />
+
 
 
   <title>{{ config('app.name', $settings->site_name ?? 'DGLink_Pub') }}</title>
