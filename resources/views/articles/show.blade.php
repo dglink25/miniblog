@@ -108,7 +108,7 @@
                                 <div class="col-12 col-sm-6 col-lg-4">
                                     <div class="media-card rounded-3 overflow-hidden shadow-sm border-0 h-100 animate-scale-in">
                                         @if ($m->isImage())
-                                            <img src="{{ asset('storage/'.$m->file_path) }}"
+                                            <img src="{{ $m->file_path }}"
                                                  class="img-fluid w-100 media-item"
                                                  alt="Média de l'article"
                                                  style="height: 200px; object-fit: cover;"
@@ -116,7 +116,7 @@
                                         @elseif ($m->isVideo())
                                             <video controls class="img-fluid w-100 media-item" 
                                                    style="height: 200px; object-fit: cover;">
-                                                <source src="{{ asset('storage/'.$m->file_path) }}" type="{{ $m->mime_type }}">
+                                                <source src="{{ $m->file_path }}" type="{{ $m->mime_type }}">
                                                 Votre navigateur ne supporte pas la lecture de vidéos.
                                             </video>
                                         @elseif ($m->isAudio())

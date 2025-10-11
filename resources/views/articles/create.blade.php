@@ -97,12 +97,18 @@ tinymce.init({
     <a href="{{ route('articles.index') }}" class="btn btn-outline-secondary">Annuler</a>
   </div>
 </form>
-@endsection
-
-@push('scripts')
-  {{-- TinyMCE (CDN) : éditeur WYSIWYG --}}
-  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
   <script>
+    function previewImage(input) {
+      const file = input.files && input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e){
+      document.getElementById('preview').src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+    }
+
     tinymce.init({
       selector: '#content-editor',
       menubar: false,
@@ -118,18 +124,7 @@ tinymce.init({
     });
 
     // Aperçu image principale
-    function previewImage(input) {
-      const file = input.files && input.files[0];
-      const img = document.getElementById('preview');
-      if (!file) {
-        img.src = 'https://placehold.co/600x340?text=Apercu';
-        return;
-      }
-      const url = URL.createObjectURL(file);
-      img.src = url;
-      img.onload = () => URL.revokeObjectURL(url);
-    }
-
+    
     // Aperçu médias multiples (images + vidéos)
     const mediaInput = document.getElementById('media-input');
     const mediaPreviews = document.getElementById('media-previews');
@@ -171,4 +166,6 @@ tinymce.init({
       });
     });
   </script>
-@endpush
+ 
+@endsection
+
