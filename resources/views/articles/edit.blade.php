@@ -22,9 +22,9 @@
         <div class="card">
           <div class="card-body p-2 text-center">
             @if ($m->isImage())
-              <img src="{{ asset('storage/'.$m->file_path) }}" class="img-fluid mb-2" style="max-height:120px;">
+              <img src="{{ $m->file_path }}" class="img-fluid mb-2" style="max-height:120px;">
             @else
-              <video src="{{ asset('storage/'.$m->file_path) }}" controls style="max-height:120px; width:100%;"></video>
+              <video src="{{ $m->file_path }}" controls style="max-height:120px; width:100%;"></video>
             @endif
 
             {{-- formulaire de suppression indépendant (pas imbriqué) --}}
@@ -65,7 +65,7 @@
   </div>
 
   <div class="col-12 col-md-6 d-flex align-items-end">
-    <img id="preview" src="{{ $article->image_path ? asset('storage/'.$article->image_path) : 'https://placehold.co/600x340?text=Apercu' }}" class="img-fluid rounded border w-100" alt="Aperçu">
+    <img id="preview" src="{{ $article->image_path ? $article->image_path : 'https://placehold.co/600x340?text=Apercu' }}" class="img-fluid rounded border w-100" alt="Aperçu">
   </div>
 
   <div class="col-12">

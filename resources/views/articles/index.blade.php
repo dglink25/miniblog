@@ -176,12 +176,12 @@
             @endphp
             
             @if ($thumb)
-              <img src="{{ asset('storage/'.$thumb->file_path) }}" 
+              <img src="{{ $thumb->file_path }}" 
                    class="card-img-top article-image" 
                    alt="Image article {{ $article->title }}"
                    loading="lazy">
             @elseif ($article->image_path)
-              <img src="{{ asset('storage/'.$article->image_path) }}" 
+              <img src="{{ $article->image_path }}" 
                    class="card-img-top article-image" 
                    alt="Image article {{ $article->title }}"
                    loading="lazy">

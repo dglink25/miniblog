@@ -87,6 +87,8 @@ return [
         /*
          * Laravel Framework Service Providers...
          */
+        CloudinaryLabs\CloudinaryLaravel\CloudinaryServiceProvider::class,
+
         Illuminate\Auth\AuthServiceProvider::class,
         Illuminate\Broadcasting\BroadcastServiceProvider::class,
         Illuminate\Bus\BusServiceProvider::class,
@@ -131,6 +133,7 @@ return [
     */
     'aliases' => Facade::defaultAliases()->merge([
         // Ajoute tes alias custom ici si besoin
+        'Cloudinary'=> CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary::class
     ])->toArray(),
 
 ];

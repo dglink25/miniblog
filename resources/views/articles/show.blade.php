@@ -86,7 +86,7 @@
             {{-- Main Article Image --}}
             @if($article->image_path)
                 <div class="main-image-container mb-4 rounded-3 overflow-hidden shadow-lg animate-slide-up">
-                    <img src="{{ asset('storage/'.$article->image_path) }}" 
+                    <img src="{{ $article->image_path }}" 
                          class="img-fluid w-100 article-main-image" 
                          alt="Image article {{ $article->title }}"
                          loading="eager">

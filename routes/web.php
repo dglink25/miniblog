@@ -262,7 +262,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/settings', [SettingController::class, 'edit'])->name('admin.settings.edit');
     Route::post('/admin/settings', [SettingController::class, 'update'])->name('admin.settings.update');
 });
-Route::get('/test-error', function () {
+/*Route::get('/test-error', function () {
     abort(500);
 });
-
+*/

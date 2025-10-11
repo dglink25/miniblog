@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+
 use App\Http\Requests\StoreArticleRequest;
 use App\Http\Requests\UpdateArticleRequest;
 use App\Models\Article;
@@ -11,6 +12,9 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\SiteSetting;
 use Purifier;
 use App\Models\Announcement;
+
+use Cloudinary\Cloudinary;         // SDK principal
+use Cloudinary\Api\Upload\UploadApi; // API upload
 
 
 class ArticleController extends Controller{
@@ -67,19 +71,25 @@ class ArticleController extends Controller{
         return view('articles.create');
     }
 
-    public function store(StoreArticleRequest $request): RedirectResponse{
-        
-        if (! auth()->user()->hasActiveTrial() && ! auth()->user()->has_subscription) {
-            return redirect()->route('subscriptions.plans')
-                ->with('error', 'Votre essai gratuit est terminé. Souscrivez un abonnement pour continuer à publier.');
-        }
+    
 
-
+    public function store(StoreArticleRequest $request): RedirectResponse
+    {
         $validated = $request->validated();
 
-        $path = $request->file('image')
-            ? $request->file('image')->store('articles', 'public')
-            : null;
+        $path = null;
+
+        if ($request->hasFile('image')) {
+            $cloudinary = new Cloudinary(env('CLOUDINARY_URL'));
+            $uploadApi = new UploadApi();
+
+            $uploaded = $uploadApi->upload(
+                $request->file('image')->getRealPath(),
+                ['folder' => 'articles']
+            );
+
+            $path = $uploaded['secure_url'];
+        }
 
         $data['content'] = \Purifier::clean($request->input('content'));
         $settings = \App\Models\SiteSetting::current();
@@ -92,20 +102,26 @@ class ArticleController extends Controller{
             'image_path'    => $path,
             'status'        => $auto ? 'validated' : 'pending',
             'published_at'  => $auto ? now() : null,
-            'is_published'  => $auto, // bool direct
+            'is_published'  => $auto,
         ]);
 
         // Médias multiples
         if ($request->hasFile('media')) {
+            $cloudinary = new Cloudinary(env('CLOUDINARY_URL'));
+            $uploadApi = new UploadApi();
+
             foreach ($request->file('media') as $file) {
-                $path = $file->store('articles', 'public');
+                $uploaded = $uploadApi->upload(
+                    $file->getRealPath(),
+                    ['folder' => 'articles/media']
+                );
 
                 $mime = $file->getMimeType();
                 $type = str_starts_with($mime, 'image') ? 'image'
                         : (str_starts_with($mime, 'video') ? 'video' : 'file');
 
                 $article->media()->create([
-                    'file_path' => $path,
+                    'file_path' => $uploaded['secure_url'],
                     'mime_type' => $mime,
                     'type' => $type,
                 ]);
@@ -113,14 +129,13 @@ class ArticleController extends Controller{
         }
 
         return redirect()->route('articles.mine')
-            ->with('success', 'Article enregistré, en attente de validation par administrateur!');
+            ->with('success', 'Article enregistré avec succès !');
     }
-
 
     public function show(Article $article){
 
-        // Exemple upload article
-        $file = $request->file('image');
+        /* Exemple upload article
+        $file = $article->image;
         if ($file) {
             $filename = time().'_'.$file->getClientOriginalName();
 
@@ -133,7 +148,7 @@ class ArticleController extends Controller{
             // Sauvegarder le nom dans la base
             $article->image = $filename;
         }
-
+*/
         if (!$article->is_published) {
             if (!auth()->check() || (auth()->id() !== $article->user_id && !auth()->user()->is_admin)) {
                 abort(404);
@@ -142,69 +157,79 @@ class ArticleController extends Controller{
         $article->load(['user','comments.user']);
         return view('articles.show', compact('article'));
     }
+    //show
 
-    public function edit(Article $article){
-        // Exemple upload article
-        $file = $request->file('image');
-        if ($file) {
-            $filename = time().'_'.$file->getClientOriginalName();
+    public function edit(Article $article)
+{
+    $this->authorize('update', $article);
+    return view('articles.edit', compact('article'));
+}
 
-            // Copier dans storage persistant
-            $file->storeAs('media', $filename);
+public function update(UpdateArticleRequest $request, Article $article): RedirectResponse
+{
+    $this->authorize('update', $article);
 
-            // Copier dans public pour affichage immédiat
-            copy(storage_path('app/media/'.$filename), public_path('uploads/'.$filename));
+    $data = $request->only('title','content');
+    $uploadApi = new UploadApi();
 
-            // Sauvegarder le nom dans la base
-            $article->image = $filename;
+    // 🔹 Image principale
+    if ($request->hasFile('image')) {
+        if ($article->image_path) {
+            $publicId = pathinfo($article->image_path, PATHINFO_FILENAME);
+            $uploadApi->destroy("articles/{$publicId}");
         }
-        $this->authorize('update', $article);
-        return view('articles.edit', compact('article'));
+
+        $uploaded = $uploadApi->upload(
+            $request->file('image')->getRealPath(),
+            ['folder' => 'articles']
+        );
+        $data['image_path'] = $uploaded['secure_url'];
     }
 
-    public function update(UpdateArticleRequest $request, Article $article): RedirectResponse{
+    // 🔹 Médias multiples
+    if ($request->hasFile('media')) {
+        foreach ($request->file('media') as $file) {
+            $uploaded = $uploadApi->upload(
+                $file->getRealPath(),
+                ['folder' => 'articles/media']
+            );
 
-        $this->authorize('update', $article);
+            $mime = $file->getClientMimeType();
+            $type = str_contains($mime, 'image')
+                ? 'image'
+                : (str_contains($mime, 'video') ? 'video' : 'file');
 
-        $data = $request->only('title','content');
-
-        if ($request->hasFile('image')) {
-            // Supprime l'ancienne image si présente
-            if ($article->image_path) {
-                Storage::disk('public')->delete($article->image_path);
-            }
-            $data['image_path'] = $request->file('image')->store('articles', 'public');
+            $article->media()->create([
+                'file_path' => $uploaded['secure_url'],
+                'mime_type' => $mime,
+                'type' => $type,
+            ]);
         }
-
-        if ($request->hasFile('media')) {
-            foreach ($request->file('media') as $file) {
-                $path = $file->store('articles/media', 'public');
-                $mime = $file->getClientMimeType();
-                $type = str_contains($mime, 'image') ? 'image' : (str_contains($mime, 'video') ? 'video' : 'file');
-                $article->media()->create([
-                    'file_path' => $path,
-                    'mime_type' => $mime,
-                    'type' => $type,
-                ]);
-            }
-        }
-
-        $article->update($data);
-
-        return redirect()->route('articles.show', $article)
-            ->with('success', "L'article a été mis à jour.");
     }
 
-    public function destroy(Article $article): RedirectResponse{
+    $article->update($data);
+
+    return redirect()->route('articles.show', $article)
+        ->with('success', "L'article a été mis à jour.");
+}
+
+    public function destroy(Article $article): RedirectResponse
+    {
         $this->authorize('delete', $article);
 
+        $cloudinary = new Cloudinary(env('CLOUDINARY_URL'));
+        $uploadApi = new UploadApi();
 
+        // Supprimer tous les médias associés
         foreach ($article->media as $m) {
-            Storage::disk('public')->delete($m->file_path);
+            $publicId = pathinfo($m->file_path, PATHINFO_FILENAME);
+            $uploadApi->destroy("articles/media/{$publicId}");
         }
 
+        // Supprimer l'image principale
         if ($article->image_path) {
-            Storage::disk('public')->delete($article->image_path);
+            $publicId = pathinfo($article->image_path, PATHINFO_FILENAME);
+            $uploadApi->destroy("articles/{$publicId}");
         }
 
         $article->delete();
@@ -212,6 +237,7 @@ class ArticleController extends Controller{
         return redirect()->route('articles.index')
             ->with('success', "L'article a été supprimé.");
     }
+
 
     public function mine(){
         $userId = auth()->id();

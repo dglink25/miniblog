@@ -14,9 +14,9 @@
       <div class="card h-100 shadow-sm">
         @php $img=$article->media->firstWhere('type','image'); @endphp
         @if($img)
-          <img class="card-img-top" src="{{ asset('storage/'.$img->file_path) }}" alt="">
+          <img class="card-img-top" src="{{ $img->file_path}}" alt="">
         @elseif($article->image_path)
-          <img class="card-img-top" src="{{ asset('storage/'.$article->image_path) }}" alt="">
+          <img class="card-img-top" src="{{ $article->image_path }}" alt="">
         @endif
         <div class="card-body d-flex flex-column">
           <h5 class="card-title">{{ $article->title }}</h5>
