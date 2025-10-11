@@ -40,5 +40,3 @@ RUN php artisan media:restore
 
 # Lancer Apache en mode foreground
 CMD ["apache2-foreground"]
-
-RUN php artisan serve --host=0.0.0.0 --port=$PORT
