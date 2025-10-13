@@ -429,7 +429,7 @@
         </div>
 
         <!-- Error Code -->
-        <h1 class="error-code">500</h1>
+        <h1 class="error-code"></h1>
 
         <!-- Error Title -->
         <h2 class="error-title">Erreur Serveur</h2>

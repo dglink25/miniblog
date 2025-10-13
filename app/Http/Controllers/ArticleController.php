@@ -150,9 +150,6 @@ class ArticleController extends Controller{
         }
 */
         if (!$article->is_published) {
-            if (!auth()->check() || (auth()->id() !== $article->user_id && !auth()->user()->is_admin)) {
-                abort(404);
-            }
         }
         $article->load(['user','comments.user']);
         return view('articles.show', compact('article'));
