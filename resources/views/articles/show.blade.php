@@ -223,11 +223,18 @@
                     <i class="fab fa-x-twitter me-2"></i>X
                     </a>
 
-                    {{-- WhatsApp --}}
-                    <a class="btn btn-sm text-white hover-lift share-btn" style="background:#25D366" target="_blank"
-                    href="https://api.whatsapp.com/send?text={{ $title }}%20{{ $url }}">
-                    <i class="fab fa-whatsapp me-2"></i>WhatsApp
-                    </a>
+                    {{-- WhatsApp avec image --}}
+                    @if($article->image_path)
+                        <a class="btn btn-sm text-white hover-lift share-btn" style="background:#25D366" target="_blank"
+                        href="https://wa.me/?text={{ $title }}%0A%0A{{ $url }}%0A%0A🖼️ {{ $article->image_path }}">
+                        <i class="fab fa-whatsapp me-2"></i>WhatsApp
+                        </a>
+                    @else
+                        <a class="btn btn-sm text-white hover-lift share-btn" style="background:#25D366" target="_blank"
+                        href="https://wa.me/?text={{ $title }}%0A%0A{{ $url }}">
+                        <i class="fab fa-whatsapp me-2"></i>WhatsApp
+                        </a>
+                    @endif
 
                     {{-- Telegram --}}
                     <a class="btn btn-sm text-white hover-lift share-btn" style="background:#0088cc" target="_blank"
