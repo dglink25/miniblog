@@ -254,10 +254,9 @@
                     href="mailto:?subject={{ $title }}&body=Découvrez cette publication : {{ $url }}">
                     <i class="fas fa-envelope me-2"></i>Email
                     </a>
-
                     {{-- Copy with Image --}}
-                    <button class="btn btn-sm text-white hover-lift share-btn copy-with-image-btn" style="background:#6c757d">
-                        <i class="fas fa-copy me-2"></i>Copier avec image
+                    <button class="btn btn-sm text-white hover-lift share-btn copy-link-btn" style="background:#6c757d">
+                        <i class="fas fa-copy me-2"></i>Copier le lien
                     </button>
                 </div>
             </div>
@@ -312,7 +311,7 @@
                             description: '{{ Str::limit(strip_tags($article->content), 150) }}'
                         };
                         
-                        const shareText = `📢 ${articleData.title}\n\n${articleData.description}\n\n🔗 ${articleData.url}`;
+                        const shareText = ` ${articleData.title}\n\n${articleData.description}\n\n🔗 ${articleData.url}`;
                         
                         // Method 1: Try to copy rich content (works in some apps)
                         if (navigator.clipboard && navigator.clipboard.write) {

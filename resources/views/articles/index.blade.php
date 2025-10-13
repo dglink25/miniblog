@@ -176,15 +176,19 @@
             @endphp
             
             @if ($thumb)
-              <img src="{{ $thumb->file_path }}" 
+              <a href="{{ route('articles.show', $article) }}">
+                <img src="{{ $thumb->file_path }}" 
                    class="card-img-top article-image" 
                    alt="Image article {{ $article->title }}"
                    loading="lazy">
+              </a>
             @elseif ($article->image_path)
+            <a href="{{ route('articles.show', $article) }}">
               <img src="{{ $article->image_path }}" 
                    class="card-img-top article-image" 
                    alt="Image article {{ $article->title }}"
                    loading="lazy">
+            </a>
             @else
               <div class="card-img-top article-image-placeholder d-flex align-items-center justify-content-center bg-light">
                 <i class="bi bi-image text-muted display-4"></i>
