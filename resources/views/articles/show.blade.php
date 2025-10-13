@@ -207,38 +207,211 @@
                     @php
                         $url = urlencode(request()->fullUrl());
                         $title = urlencode($article->title);
+                        $image = $article->image_path ? urlencode($article->image_path) : '';
+                        $description = urlencode(Str::limit(strip_tags($article->content), 150));
                     @endphp
                     
+                    {{-- Facebook --}}
                     <a class="btn btn-sm text-white hover-lift share-btn" style="background:#1877F2" target="_blank"
-                       href="https://www.facebook.com/sharer/sharer.php?u={{ $url }}">
-                       <i class="fab fa-facebook-f me-2"></i>Facebook
+                    href="https://www.facebook.com/sharer/sharer.php?u={{ $url }}&picture={{ $image }}&title={{ $title }}&description={{ $description }}">
+                    <i class="fab fa-facebook-f me-2"></i>Facebook
                     </a>
 
+                    {{-- X (Twitter) --}}
                     <a class="btn btn-sm text-white hover-lift share-btn" style="background:#000000" target="_blank"
-                       href="https://twitter.com/intent/tweet?url={{ $url }}&text={{ $title }}">
-                       <i class="fab fa-x-twitter me-2"></i>X
+                    href="https://twitter.com/intent/tweet?url={{ $url }}&text={{ $title }}&hashtags=E-SOURCE">
+                    <i class="fab fa-x-twitter me-2"></i>X
                     </a>
 
+                    {{-- WhatsApp --}}
                     <a class="btn btn-sm text-white hover-lift share-btn" style="background:#25D366" target="_blank"
-                       href="https://api.whatsapp.com/send?text={{ $title }}%20{{ $url }}">
-                       <i class="fab fa-whatsapp me-2"></i>WhatsApp
+                    href="https://api.whatsapp.com/send?text={{ $title }}%20{{ $url }}">
+                    <i class="fab fa-whatsapp me-2"></i>WhatsApp
                     </a>
 
+                    {{-- Telegram --}}
                     <a class="btn btn-sm text-white hover-lift share-btn" style="background:#0088cc" target="_blank"
-                       href="https://t.me/share/url?url={{ $url }}&text={{ $title }}">
-                       <i class="fab fa-telegram me-2"></i>Telegram
+                    href="https://t.me/share/url?url={{ $url }}&text={{ $title }}">
+                    <i class="fab fa-telegram me-2"></i>Telegram
                     </a>
 
+                    {{-- LinkedIn --}}
                     <a class="btn btn-sm text-white hover-lift share-btn" style="background:#0A66C2" target="_blank"
-                       href="https://www.linkedin.com/sharing/share-offsite/?url={{ $url }}">
-                       <i class="fab fa-linkedin-in me-2"></i>LinkedIn
+                    href="https://www.linkedin.com/sharing/share-offsite/?url={{ $url }}">
+                    <i class="fab fa-linkedin-in me-2"></i>LinkedIn
                     </a>
 
-                    <button class="btn btn-sm text-white hover-lift share-btn copy-link-btn" style="background:#6c757d">
-                        <i class="fas fa-copy me-2"></i>Copier le lien
+                    {{-- Pinterest --}}
+                    @if($article->image_path)
+                        <a class="btn btn-sm text-white hover-lift share-btn" style="background:#BD081C" target="_blank"
+                        href="https://pinterest.com/pin/create/button/?url={{ $url }}&media={{ $image }}&description={{ $title }}">
+                        <i class="fab fa-pinterest me-2"></i>Pinterest
+                        </a>
+                    @endif
+
+                    {{-- Email --}}
+                    <a class="btn btn-sm text-white hover-lift share-btn" style="background:#EA4335" target="_blank"
+                    href="mailto:?subject={{ $title }}&body=Découvrez cette publication : {{ $url }}">
+                    <i class="fas fa-envelope me-2"></i>Email
+                    </a>
+
+                    {{-- Copy with Image --}}
+                    <button class="btn btn-sm text-white hover-lift share-btn copy-with-image-btn" style="background:#6c757d">
+                        <i class="fas fa-copy me-2"></i>Copier avec image
                     </button>
                 </div>
             </div>
+
+            <style>
+            .share-btn {
+                position: relative;
+                overflow: hidden;
+                transition: all 0.3s ease;
+            }
+
+            .share-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            }
+
+            .copy-with-image-btn.copied {
+                background-color: #28a745 !important;
+            }
+
+            /* Responsive adjustments */
+            @media (max-width: 768px) {
+                .share-section .d-flex {
+                    justify-content: center;
+                }
+                
+                .share-btn {
+                    flex: 1;
+                    min-width: 140px;
+                    margin-bottom: 0.5rem;
+                }
+            }
+
+            @media (max-width: 576px) {
+                .share-btn {
+                    min-width: 120px;
+                    font-size: 0.8rem;
+                }
+            }
+            </style>
+
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Copy with image functionality
+                const copyWithImageBtn = document.querySelector('.copy-with-image-btn');
+                if (copyWithImageBtn) {
+                    copyWithImageBtn.addEventListener('click', function() {
+                        const articleData = {
+                            title: '{{ $article->title }}',
+                            url: '{{ request()->fullUrl() }}',
+                            image: '{{ $article->image_path }}',
+                            description: '{{ Str::limit(strip_tags($article->content), 150) }}'
+                        };
+                        
+                        const shareText = `📢 ${articleData.title}\n\n${articleData.description}\n\n🔗 ${articleData.url}`;
+                        
+                        // Method 1: Try to copy rich content (works in some apps)
+                        if (navigator.clipboard && navigator.clipboard.write) {
+                            const htmlContent = `
+                                <div style="font-family: Arial, sans-serif; max-width: 500px;">
+                                    ${articleData.image ? `<img src="${articleData.image}" alt="${articleData.title}" style="max-width: 100%; border-radius: 8px; margin-bottom: 10px;">` : ''}
+                                    <h3 style="color: #1e3a8a; margin: 0 0 10px 0;">${articleData.title}</h3>
+                                    <p style="color: #666; margin: 0 0 10px 0;">${articleData.description}</p>
+                                    <a href="${articleData.url}" style="color: #3b82f6; text-decoration: none;">🔗 Voir la publication</a>
+                                </div>
+                            `;
+                            
+                            const blobHtml = new Blob([htmlContent], { type: 'text/html' });
+                            const blobText = new Blob([shareText], { type: 'text/plain' });
+                            
+                            const data = new ClipboardItem({
+                                'text/html': blobHtml,
+                                'text/plain': blobText
+                            });
+                            
+                            navigator.clipboard.write([data]).then(() => {
+                                showCopySuccess(this);
+                            }).catch(() => {
+                                // Fallback to plain text
+                                copyPlainText(shareText, this);
+                            });
+                        } else {
+                            // Fallback to plain text
+                            copyPlainText(shareText, this);
+                        }
+                    });
+                }
+                
+                function copyPlainText(text, button) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        showCopySuccess(button);
+                    }).catch(() => {
+                        // Ultimate fallback
+                        const textArea = document.createElement('textarea');
+                        textArea.value = text;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        showCopySuccess(button);
+                    });
+                }
+                
+                function showCopySuccess(button) {
+                    const originalHTML = button.innerHTML;
+                    button.innerHTML = '<i class="fas fa-check me-2"></i>Copié !';
+                    button.classList.add('copied');
+                    
+                    setTimeout(() => {
+                        button.innerHTML = originalHTML;
+                        button.classList.remove('copied');
+                    }, 2000);
+                }
+                
+                // Enhanced sharing with image preview
+                const shareButtons = document.querySelectorAll('.share-btn[target="_blank"]');
+                shareButtons.forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        // Add tracking or analytics here if needed
+                        console.log('Sharing via:', this.querySelector('i').className);
+                    });
+                });
+                
+                // Social media specific enhancements
+                function enhanceSocialShares() {
+                    // Facebook Open Graph meta (should be in your layout head)
+                    const metaTags = `
+                        <meta property="og:title" content="{{ $article->title }}">
+                        <meta property="og:description" content="{{ Str::limit(strip_tags($article->content), 150) }}">
+                        <meta property="og:url" content="{{ request()->fullUrl() }}">
+                        <meta property="og:type" content="article">
+                        @if($article->image_path)
+                        <meta property="og:image" content="{{ $article->image_path }}">
+                        <meta property="og:image:width" content="1200">
+                        <meta property="og:image:height" content="630">
+                        @endif
+                        <meta name="twitter:card" content="summary_large_image">
+                        <meta name="twitter:title" content="{{ $article->title }}">
+                        <meta name="twitter:description" content="{{ Str::limit(strip_tags($article->content), 150) }}">
+                        @if($article->image_path)
+                        <meta name="twitter:image" content="{{ $article->image_path }}">
+                        @endif
+                    `;
+                    
+                    // Ensure meta tags are in head (for social media crawlers)
+                    if (!document.querySelector('meta[property="og:title"]')) {
+                        document.head.insertAdjacentHTML('beforeend', metaTags);
+                    }
+                }
+                
+                // Initialize social media enhancements
+                enhanceSocialShares();
+            });
+            </script>
 
             {{-- Rating Section --}}
             @auth

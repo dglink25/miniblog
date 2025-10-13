@@ -18,7 +18,7 @@ class CommentController extends Controller{
     public function store(Request $request, Article $article)
     {
         $request->validate([
-            'body' => 'required|min:10',
+            'body' => 'required|min:1',
         ]);
 
         $article->comments()->create([
@@ -31,7 +31,7 @@ class CommentController extends Controller{
     public function reply(Request $request, Comment $comment)
     {
         $request->validate([
-            'body' => 'required|string|max:1000',
+            'body' => 'required|string|max:100000',
         ]);
 
         $reply = new Comment();
@@ -67,7 +67,7 @@ class CommentController extends Controller{
         }
 
         $request->validate([
-            'body' => 'required|string|max:10000',
+            'body' => 'required|string|max:1000000',
         ]);
 
         $comment->update(['body' => $request->body]);
