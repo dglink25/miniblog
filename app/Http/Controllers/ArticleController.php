@@ -73,8 +73,7 @@ class ArticleController extends Controller{
 
     
 
-    public function store(StoreArticleRequest $request): RedirectResponse
-    {
+    public function store(StoreArticleRequest $request): RedirectResponse{
         $validated = $request->validated();
 
         $path = null;
@@ -149,8 +148,7 @@ class ArticleController extends Controller{
             $article->image = $filename;
         }
 */
-        if (!$article->is_published) {
-        }
+        
         $article->load(['user','comments.user']);
         return view('articles.show', compact('article'));
     }
