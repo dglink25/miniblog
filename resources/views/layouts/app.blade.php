@@ -10,9 +10,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
-
-
+  <meta name="description" content="Miniblog est une plateforme moderne de publication d’articles développée par DGLINK. Elle facilite la création, la visibilité et la diffusion du contenu web en Afrique.">
+  <meta name="keywords" content="Miniblog, DGLINK, blog, publication, Afrique, numérique, technologie, Lokossa, Bénin">
+  <meta property="og:title" content="Miniblog — La plateforme de publication numérique par DGLINK">
+  <meta property="og:description" content="Partagez vos idées, projets et articles sur une plateforme simple et rapide.">
+  <meta property="og:image" content="https://miniblog-myrd.onrender.com/uploads/affiche-miniblog.jpg">
+  <meta name="author" content="DGLINK">
 
   <title>{{ config('app.name', $settings->site_name ?? 'DGLink_Pub') }}</title>
 

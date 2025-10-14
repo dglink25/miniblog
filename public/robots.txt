@@ -1,3 +1,21 @@
 User-agent: *
 Allow: /
 Sitemap: https://miniblog-myrd.onrender.com/sitemap.xml
+
+
+User-agent: *
+Allow: /
+
+# Exclusions des fichiers inutiles
+Disallow: /admin
+
+# Sitemap officiel
+Sitemap: https://miniblog-myrd.onrender.com/sitemap.xml
+
+# Informations
+# Plateforme : Miniblog by DGLINK
+# Description : Miniblog est une plateforme béninoise de publication numérique qui facilite
+# la création, le partage et la diffusion de contenu web pour les créateurs, entreprises et formateurs.
+# Objectif : Promouvoir le numérique et la visibilité des projets africains en ligne.
+
+# DGLINK, innover pour relier le monde.
