@@ -86,11 +86,13 @@
             {{-- Main Article Image --}}
             @if($article->image_path)
                 <div class="main-image-container mb-4 rounded-3 overflow-hidden shadow-lg animate-slide-up">
-                    <img src="{{ $article->image_path }}" 
-                         class="img-fluid w-100 article-main-image cursor-zoom" 
-                         alt="Image article {{ $article->title }}"
-                         loading="eager"
-                         onclick="openImageModal('{{ $article->image_path }}', '{{ $article->title }}')">
+                    <div class="image-ratio-container">
+                        <img src="{{ $article->image_path }}" 
+                             class="article-main-image cursor-zoom" 
+                             alt="Image article {{ $article->title }}"
+                             loading="eager"
+                             onclick="openLightbox('{{ $article->image_path }}', '{{ $article->title }}')">
+                    </div>
                 </div>
             @endif
 
@@ -107,28 +109,35 @@
                         <div class="row g-2 g-sm-3">
                             @foreach ($article->media as $m)
                                 <div class="col-6 col-sm-4 col-lg-3">
-                                    <div class="media-card rounded-3 overflow-hidden shadow-sm border-0 h-100 animate-scale-in">
+                                    <div class="media-card rounded-3 overflow-hidden shadow-sm border-0 animate-scale-in">
                                         @if ($m->isImage())
-                                            <img src="{{ $m->file_path }}"
-                                                 class="img-fluid w-100 media-item cursor-zoom"
-                                                 alt="Média de l'article"
-                                                 onclick="openImageModal('{{ $m->file_path }}', '{{ $article->title }}')"
-                                                 loading="lazy">
+                                            <div class="image-ratio-container">
+                                                <img src="{{ $m->file_path }}"
+                                                     class="media-item cursor-zoom"
+                                                     alt="Média de l'article"
+                                                     onclick="openLightbox('{{ $m->file_path }}', '{{ $article->title }}')"
+                                                     loading="lazy">
+                                            </div>
                                         @elseif ($m->isVideo())
-                                            <video controls class="img-fluid w-100 media-item cursor-zoom" 
-                                                   onclick="openVideoModal('{{ $m->file_path }}')">
-                                                <source src="{{ $m->file_path }}" type="{{ $m->mime_type }}">
-                                                Votre navigateur ne supporte pas la lecture de vidéos.
-                                            </video>
+                                            <div class="video-ratio-container">
+                                                <video controls class="media-item cursor-zoom" 
+                                                       onclick="openVideoLightbox('{{ $m->file_path }}')">
+                                                    <source src="{{ $m->file_path }}" type="{{ $m->mime_type }}">
+                                                    Votre navigateur ne supporte pas la lecture de vidéos.
+                                                </video>
+                                                <div class="video-overlay">
+                                                    <i class="bi bi-play-circle-fill"></i>
+                                                </div>
+                                            </div>
                                         @elseif ($m->isAudio())
-                                            <div class="p-2 p-sm-3 bg-light h-100 d-flex align-items-center">
+                                            <div class="audio-container p-2 p-sm-3 bg-light d-flex align-items-center">
                                                 <audio controls class="w-100">
                                                     <source src="{{ asset('storage/'.$m->file_path) }}" type="{{ $m->mime_type }}">
                                                     Votre navigateur ne supporte pas la lecture audio.
                                                 </audio>
                                             </div>
                                         @else
-                                            <div class="p-2 p-sm-3 bg-light h-100 d-flex align-items-center justify-content-center">
+                                            <div class="file-container p-2 p-sm-3 bg-light d-flex align-items-center justify-content-center">
                                                 <a href="{{ asset('storage/'.$m->file_path) }}" 
                                                    target="_blank" 
                                                    class="btn btn-outline-primary btn-sm hover-lift">
@@ -502,31 +511,46 @@
     </div>
 </div>
 
-<!-- Modal for Image Zoom -->
-<div id="imageModal" class="modal-image-overlay">
-    <div class="modal-image-content">
-        <span class="modal-image-close" onclick="closeImageModal()">&times;</span>
-        <img class="modal-image" id="modalImage">
-        <div class="modal-image-caption" id="modalCaption"></div>
-        <div class="modal-image-nav">
-            <button class="nav-btn prev-btn" onclick="navigateImage(-1)">&#10094;</button>
-            <button class="nav-btn next-btn" onclick="navigateImage(1)">&#10095;</button>
+<!-- Lightbox Modal -->
+<div id="lightbox" class="lightbox">
+    <div class="lightbox-content">
+        <span class="lightbox-close" onclick="closeLightbox()">
+            <i class="bi bi-x-lg"></i>
+        </span>
+        <div class="lightbox-image-container">
+            <img class="lightbox-image" id="lightboxImage">
+            <div class="lightbox-caption" id="lightboxCaption"></div>
+        </div>
+        <div class="lightbox-nav">
+            <button class="lightbox-nav-btn lightbox-prev" onclick="navigateLightbox(-1)">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <button class="lightbox-nav-btn lightbox-next" onclick="navigateLightbox(1)">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+        <div class="lightbox-counter">
+            <span id="lightboxCounter">1/1</span>
         </div>
     </div>
 </div>
 
-<!-- Modal for Video -->
-<div id="videoModal" class="modal-video-overlay">
-    <div class="modal-video-content">
-        <span class="modal-video-close" onclick="closeVideoModal()">&times;</span>
-        <video controls class="modal-video" id="modalVideo">
-            Votre navigateur ne supporte pas la lecture de vidéos.
-        </video>
+<!-- Video Lightbox Modal -->
+<div id="videoLightbox" class="lightbox">
+    <div class="lightbox-content video-lightbox-content">
+        <span class="lightbox-close" onclick="closeVideoLightbox()">
+            <i class="bi bi-x-lg"></i>
+        </span>
+        <div class="video-container">
+            <video controls class="lightbox-video" id="lightboxVideo">
+                Votre navigateur ne supporte pas la lecture de vidéos.
+            </video>
+        </div>
     </div>
 </div>
 
 <style>
-/* Responsive Typography */
+/* ===== RESPONSIVE TYPOGRAPHY ===== */
 .article-title {
     font-size: clamp(1.5rem, 4vw, 2.5rem);
     line-height: 1.3;
@@ -538,44 +562,70 @@
     line-height: 1.6;
 }
 
-/* Mobile First Media Gallery */
-.media-gallery .row {
-    margin: 0 -0.25rem;
+/* ===== IMAGE RATIO CONTAINERS ===== */
+.image-ratio-container {
+    position: relative;
+    width: 100%;
+    padding-bottom: 66.67%; /* Ratio 3:2 */
+    overflow: hidden;
+    background: #f8f9fa;
 }
 
-.media-gallery .col-6 {
-    padding: 0.25rem;
+.video-ratio-container {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%; /* Ratio 16:9 */
+    overflow: hidden;
+    background: #000;
 }
 
+.article-main-image,
 .media-item {
-    height: 120px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    transition: transform 0.3s ease;
-    cursor: pointer;
+    object-position: center;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@media (min-width: 576px) {
-    .media-item {
-        height: 150px;
-    }
-}
-
-@media (min-width: 768px) {
-    .media-item {
-        height: 180px;
-    }
-}
-
+/* ===== CURSOR & HOVER EFFECTS ===== */
 .cursor-zoom {
     cursor: zoom-in;
 }
 
-.media-item:hover {
-    transform: scale(1.02);
+.media-card:hover .media-item {
+    transform: scale(1.05);
 }
 
-/* Image Modal Styles */
-.modal-image-overlay {
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.video-ratio-container:hover .video-overlay {
+    opacity: 1;
+}
+
+.video-overlay i {
+    font-size: 3rem;
+    color: white;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+}
+
+/* ===== LIGHTBOX STYLES ===== */
+.lightbox {
     display: none;
     position: fixed;
     z-index: 9999;
@@ -583,207 +633,220 @@
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.9);
-    backdrop-filter: blur(5px);
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-.modal-image-content {
+.lightbox.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: lightboxFadeIn 0.3s ease forwards;
+}
+
+@keyframes lightboxFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.lightbox-content {
     position: relative;
-    margin: auto;
-    padding: 20px;
     width: 95%;
     max-width: 1200px;
-    height: 95vh;
+    max-height: 95vh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
 }
 
-.modal-image {
-    max-width: 100%;
-    max-height: 80vh;
-    object-fit: contain;
-    border-radius: 8px;
+.video-lightbox-content {
+    max-width: 900px;
 }
 
-.modal-image-close {
+/* Lightbox Close Button */
+.lightbox-close {
     position: absolute;
-    top: 15px;
-    right: 35px;
-    color: #fff;
-    font-size: 40px;
-    font-weight: bold;
+    top: -50px;
+    right: 0;
+    color: white;
+    font-size: 2rem;
     cursor: pointer;
-    z-index: 10000;
-    background: rgba(0,0,0,0.5);
+    background: rgba(255, 255, 255, 0.1);
     width: 50px;
     height: 50px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.modal-image-caption {
-    color: #fff;
+.lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+/* Lightbox Image Container */
+.lightbox-image-container {
+    position: relative;
+    width: 100%;
+    max-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox-image {
+    max-width: 100%;
+    max-height: 80vh;
+    object-fit: contain;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: imageZoomIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes imageZoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Video Container */
+.video-container {
+    width: 100%;
+    max-height: 80vh;
+}
+
+.lightbox-video {
+    width: 100%;
+    height: auto;
+    max-height: 80vh;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Lightbox Caption */
+.lightbox-caption {
+    position: absolute;
+    bottom: -60px;
+    left: 0;
+    width: 100%;
     text-align: center;
-    margin-top: 15px;
+    color: white;
     font-size: 1.1rem;
-    padding: 0 20px;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
 }
 
-.modal-image-nav {
+/* Lightbox Navigation */
+.lightbox-nav {
     position: absolute;
     top: 50%;
     width: 100%;
     display: flex;
     justify-content: space-between;
     transform: translateY(-50%);
-    padding: 0 20px;
+    padding: 0 2rem;
 }
 
-.nav-btn {
-    background: rgba(0,0,0,0.5);
+.lightbox-nav-btn {
+    background: rgba(255, 255, 255, 0.1);
     color: white;
     border: none;
-    font-size: 24px;
-    padding: 15px;
-    cursor: pointer;
+    font-size: 1.5rem;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
-    width: 50px;
-    height: 50px;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.3s ease;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.nav-btn:hover {
-    background: rgba(0,0,0,0.8);
+.lightbox-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
 }
 
-/* Video Modal Styles */
-.modal-video-overlay {
-    display: none;
-    position: fixed;
-    z-index: 9999;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.9);
-}
-
-.modal-video-content {
-    position: relative;
-    margin: auto;
-    padding: 20px;
-    width: 95%;
-    max-width: 800px;
-    height: 80vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
-.modal-video {
-    width: 100%;
-    height: 100%;
-    max-height: 70vh;
-    border-radius: 8px;
-}
-
-.modal-video-close {
+/* Lightbox Counter */
+.lightbox-counter {
     position: absolute;
-    top: 15px;
-    right: 35px;
-    color: #fff;
-    font-size: 40px;
-    font-weight: bold;
-    cursor: pointer;
-    z-index: 10000;
-    background: rgba(0,0,0,0.5);
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    top: -50px;
+    left: 0;
+    color: white;
+    font-size: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
 }
 
-/* Mobile Optimizations */
+/* ===== MOBILE OPTIMIZATIONS ===== */
 @media (max-width: 768px) {
     .container-fluid {
         padding-left: 1rem;
         padding-right: 1rem;
     }
     
-    .article-main-image {
-        max-height: 300px;
+    .image-ratio-container {
+        padding-bottom: 75%; /* Ratio 4:3 sur mobile */
     }
     
-    .modal-image-content {
-        padding: 10px;
+    .video-ratio-container {
+        padding-bottom: 75%;
+    }
+    
+    /* Lightbox Mobile */
+    .lightbox-content {
         width: 98%;
-        height: 98vh;
+        max-height: 90vh;
     }
     
-    .modal-image-close {
+    .lightbox-close {
         top: 10px;
-        right: 15px;
-        font-size: 30px;
-        width: 40px;
-        height: 40px;
+        right: 10px;
+        width: 45px;
+        height: 45px;
+        font-size: 1.5rem;
     }
     
-    .nav-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 20px;
-        padding: 10px;
+    .lightbox-nav {
+        padding: 0 1rem;
     }
     
-    .modal-video-content {
-        padding: 10px;
-        width: 98%;
-        height: 70vh;
+    .lightbox-nav-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 1.2rem;
     }
     
-    .modal-video-close {
+    .lightbox-counter {
         top: 10px;
-        right: 15px;
-        font-size: 30px;
-        width: 40px;
-        height: 40px;
+        left: 10px;
     }
     
-    /* Share buttons mobile optimization */
-    .share-section .d-flex {
-        justify-content: center !important;
-        gap: 0.5rem !important;
+    .lightbox-caption {
+        bottom: -80px;
+        font-size: 1rem;
     }
     
-    .share-btn {
-        flex: 0 0 calc(50% - 0.5rem) !important;
-        min-width: auto !important;
-        margin-bottom: 0.5rem;
-        font-size: 0.8rem;
-        padding: 0.5rem 0.75rem;
-    }
-
-    /* Action buttons mobile */
-    .action-buttons .d-flex {
-        justify-content: center !important;
-        gap: 0.5rem !important;
-    }
-    
-    .action-buttons .btn {
-        flex: 1;
-        min-width: 120px;
-        font-size: 0.85rem;
-        padding: 0.5rem 0.75rem;
+    .video-overlay i {
+        font-size: 2.5rem;
     }
 }
 
@@ -793,63 +856,41 @@
         max-width: 50%;
     }
     
-    .media-item {
-        height: 100px;
+    .image-ratio-container {
+        padding-bottom: 100%; /* Ratio carré sur très petit mobile */
     }
     
-    .comment-reactions .d-flex {
-        justify-content: center;
-        gap: 0.25rem !important;
+    .lightbox-nav-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 1.1rem;
     }
     
-    .comment-reactions .btn {
-        font-size: 0.75rem;
-        padding: 0.25rem 0.5rem;
-    }
-    
-    .star-rating .btn-lg {
-        padding: 0.2rem !important;
-        font-size: 1rem;
-    }
-
-    /* Rating section mobile */
-    .rating-section {
-        padding: 1.5rem !important;
-    }
-
-    /* Comments mobile */
-    .comment-card .card-body {
-        padding: 1rem !important;
-    }
-
-    .replies-container {
-        padding-left: 1rem !important;
+    .lightbox-close {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
     }
 }
 
-/* Touch device optimizations */
+/* ===== TOUCH DEVICE OPTIMIZATIONS ===== */
 @media (hover: none) and (pointer: coarse) {
-    .hover-lift:hover {
-        transform: none;
-    }
-    
-    .media-item:hover {
-        transform: none;
-    }
-    
-    .nav-btn, .modal-image-close, .modal-video-close {
+    .lightbox-nav-btn,
+    .lightbox-close {
         min-width: 44px;
         min-height: 44px;
     }
+    
+    .media-card:hover .media-item {
+        transform: none;
+    }
+    
+    .video-ratio-container:hover .video-overlay {
+        opacity: 0.7;
+    }
 }
 
-/* Text break for long words */
-.text-break {
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
-
-/* Keep your existing animations and styles */
+/* ===== EXISTING ANIMATIONS ===== */
 .animate-fade-in {
     animation: fadeIn 0.6s ease-in-out;
 }
@@ -889,6 +930,7 @@
     }
 }
 
+/* ===== EXISTING UTILITIES ===== */
 .hover-lift {
     transition: all 0.3s ease;
 }
@@ -907,172 +949,174 @@
     border-color: #4361ee;
 }
 
-.article-main-image {
-    max-height: 500px;
-    object-fit: cover;
-}
-
-.share-btn, .reaction-btn {
-    transition: all 0.3s ease;
-}
-
-.star-btn {
-    color: #dee2e6;
-    transition: all 0.2s ease;
-}
-
-.star-btn:hover {
-    color: #ffc107;
-    transform: scale(1.2);
+.text-break {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .copy-link-btn.copied {
     background-color: #28a745 !important;
 }
-
-.comment-card {
-    transition: all 0.3s ease;
-}
-
-.avatar-placeholder {
-    transition: all 0.3s ease;
-}
 </style>
 
 <script>
-// Image Modal Functionality
-let currentImageIndex = 0;
-let imageElements = [];
+// ===== LIGHTBOX FUNCTIONALITY =====
+let currentLightboxIndex = 0;
+let lightboxImages = [];
 
-function openImageModal(imageSrc, caption) {
-    const modal = document.getElementById('imageModal');
-    const modalImg = document.getElementById('modalImage');
-    const captionText = document.getElementById('modalCaption');
+function openLightbox(imageSrc, caption) {
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImage');
+    const captionText = document.getElementById('lightboxCaption');
+    const counter = document.getElementById('lightboxCounter');
     
     // Collect all clickable images
-    imageElements = Array.from(document.querySelectorAll('.cursor-zoom[src]'));
-    currentImageIndex = imageElements.findIndex(img => img.src.includes(imageSrc));
+    lightboxImages = Array.from(document.querySelectorAll('.cursor-zoom[src]'));
+    currentLightboxIndex = lightboxImages.findIndex(img => img.src.includes(imageSrc));
     
-    modal.style.display = 'block';
-    modalImg.src = imageSrc;
+    // Show lightbox with animation
+    lightbox.classList.add('active');
+    lightboxImg.src = imageSrc;
     captionText.innerHTML = caption || '';
+    updateLightboxCounter();
     
     document.body.style.overflow = 'hidden';
 }
 
-function closeImageModal() {
-    const modal = document.getElementById('imageModal');
-    modal.style.display = 'none';
+function closeLightbox() {
+    const lightbox = document.getElementById('lightbox');
+    lightbox.classList.remove('active');
+    
+    setTimeout(() => {
+        lightbox.style.display = 'none';
+    }, 300);
+    
     document.body.style.overflow = 'auto';
 }
 
-function navigateImage(direction) {
-    if (imageElements.length === 0) return;
+function navigateLightbox(direction) {
+    if (lightboxImages.length === 0) return;
     
-    currentImageIndex += direction;
+    currentLightboxIndex += direction;
     
-    if (currentImageIndex >= imageElements.length) {
-        currentImageIndex = 0;
-    } else if (currentImageIndex < 0) {
-        currentImageIndex = imageElements.length - 1;
+    if (currentLightboxIndex >= lightboxImages.length) {
+        currentLightboxIndex = 0;
+    } else if (currentLightboxIndex < 0) {
+        currentLightboxIndex = lightboxImages.length - 1;
     }
     
-    const modalImg = document.getElementById('modalImage');
-    const captionText = document.getElementById('modalCaption');
+    const lightboxImg = document.getElementById('lightboxImage');
+    const captionText = document.getElementById('lightboxCaption');
     
-    modalImg.src = imageElements[currentImageIndex].src;
-    captionText.innerHTML = imageElements[currentImageIndex].alt || '';
+    // Add fade transition
+    lightboxImg.style.opacity = '0';
+    
+    setTimeout(() => {
+        lightboxImg.src = lightboxImages[currentLightboxIndex].src;
+        captionText.innerHTML = lightboxImages[currentLightboxIndex].alt || '';
+        lightboxImg.style.opacity = '1';
+        updateLightboxCounter();
+    }, 200);
 }
 
-// Video Modal Functionality
-function openVideoModal(videoSrc) {
-    const modal = document.getElementById('videoModal');
-    const modalVideo = document.getElementById('modalVideo');
+function updateLightboxCounter() {
+    const counter = document.getElementById('lightboxCounter');
+    counter.textContent = `${currentLightboxIndex + 1}/${lightboxImages.length}`;
+}
+
+// ===== VIDEO LIGHTBOX FUNCTIONALITY =====
+function openVideoLightbox(videoSrc) {
+    const lightbox = document.getElementById('videoLightbox');
+    const lightboxVideo = document.getElementById('lightboxVideo');
     
-    modal.style.display = 'block';
-    modalVideo.src = videoSrc;
-    modalVideo.load();
+    lightbox.classList.add('active');
+    lightboxVideo.src = videoSrc;
+    lightboxVideo.load();
     
     document.body.style.overflow = 'hidden';
 }
 
-function closeVideoModal() {
-    const modal = document.getElementById('videoModal');
-    const modalVideo = document.getElementById('modalVideo');
+function closeVideoLightbox() {
+    const lightbox = document.getElementById('videoLightbox');
+    const lightboxVideo = document.getElementById('lightboxVideo');
     
-    modal.style.display = 'none';
-    modalVideo.pause();
-    modalVideo.src = '';
+    lightbox.classList.remove('active');
+    lightboxVideo.pause();
+    
+    setTimeout(() => {
+        lightbox.style.display = 'none';
+        lightboxVideo.src = '';
+    }, 300);
     
     document.body.style.overflow = 'auto';
 }
 
-// Close modals on outside click
-document.addEventListener('click', function(event) {
-    const imageModal = document.getElementById('imageModal');
-    const videoModal = document.getElementById('videoModal');
-    
-    if (event.target === imageModal) {
-        closeImageModal();
-    }
-    
-    if (event.target === videoModal) {
-        closeVideoModal();
-    }
-});
-
-// Keyboard navigation
-document.addEventListener('keydown', function(event) {
-    const imageModal = document.getElementById('imageModal');
-    const videoModal = document.getElementById('videoModal');
-    
-    if (imageModal.style.display === 'block') {
-        if (event.key === 'Escape') {
-            closeImageModal();
-        } else if (event.key === 'ArrowLeft') {
-            navigateImage(-1);
-        } else if (event.key === 'ArrowRight') {
-            navigateImage(1);
-        }
-    }
-    
-    if (videoModal.style.display === 'block' && event.key === 'Escape') {
-        closeVideoModal();
-    }
-});
-
-// Touch gestures for mobile
-let touchStartX = 0;
-let touchEndX = 0;
-
-document.addEventListener('touchstart', function(event) {
-    touchStartX = event.changedTouches[0].screenX;
-});
-
-document.addEventListener('touchend', function(event) {
-    touchEndX = event.changedTouches[0].screenX;
-    handleSwipe();
-});
-
-function handleSwipe() {
-    const imageModal = document.getElementById('imageModal');
-    
-    if (imageModal.style.display === 'block') {
-        const swipeThreshold = 50;
-        
-        if (touchEndX < touchStartX - swipeThreshold) {
-            navigateImage(1); // Swipe left - next image
-        }
-        
-        if (touchEndX > touchStartX + swipeThreshold) {
-            navigateImage(-1); // Swipe right - previous image
-        }
-    }
-}
-
-// Existing functionality
+// ===== EVENT LISTENERS =====
 document.addEventListener('DOMContentLoaded', function() {
-    // Copy link functionality
+    // Close lightboxes on outside click
+    document.addEventListener('click', function(event) {
+        const lightbox = document.getElementById('lightbox');
+        const videoLightbox = document.getElementById('videoLightbox');
+        
+        if (event.target === lightbox) {
+            closeLightbox();
+        }
+        
+        if (event.target === videoLightbox) {
+            closeVideoLightbox();
+        }
+    });
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', function(event) {
+        const lightbox = document.getElementById('lightbox');
+        const videoLightbox = document.getElementById('videoLightbox');
+        
+        if (lightbox.classList.contains('active')) {
+            if (event.key === 'Escape') {
+                closeLightbox();
+            } else if (event.key === 'ArrowLeft') {
+                navigateLightbox(-1);
+            } else if (event.key === 'ArrowRight') {
+                navigateLightbox(1);
+            }
+        }
+        
+        if (videoLightbox.classList.contains('active') && event.key === 'Escape') {
+            closeVideoLightbox();
+        }
+    });
+    
+    // Touch gestures for mobile
+    let touchStartX = 0;
+    let touchEndX = 0;
+    
+    document.addEventListener('touchstart', function(event) {
+        touchStartX = event.changedTouches[0].screenX;
+    });
+    
+    document.addEventListener('touchend', function(event) {
+        touchEndX = event.changedTouches[0].screenX;
+        handleSwipe();
+    });
+    
+    function handleSwipe() {
+        const lightbox = document.getElementById('lightbox');
+        
+        if (lightbox.classList.contains('active')) {
+            const swipeThreshold = 50;
+            
+            if (touchEndX < touchStartX - swipeThreshold) {
+                navigateLightbox(1); // Swipe left - next image
+            }
+            
+            if (touchEndX > touchStartX + swipeThreshold) {
+                navigateLightbox(-1); // Swipe right - previous image
+            }
+        }
+    }
+    
+    // Existing functionality
     const copyLinkBtn = document.querySelector('.copy-link-btn');
     if (copyLinkBtn) {
         copyLinkBtn.addEventListener('click', function() {
@@ -1107,7 +1151,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Add animation to elements on scroll
+    // Scroll animations
     const observerOptions = {
         threshold: 0.1,
         rootMargin: '50px'
@@ -1122,7 +1166,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, observerOptions);
     
-    // Observe all animated elements
     document.querySelectorAll('.animate-fade-in, .animate-slide-up, .animate-scale-in').forEach(el => {
         el.style.opacity = '0';
         el.style.transform = 'translateY(20px)';
@@ -1131,4 +1174,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+
+<!-- Rest of your existing content for action buttons, share section, rating, comments -->
 @endsection

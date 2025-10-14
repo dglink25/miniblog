@@ -243,13 +243,13 @@
               font-weight: 500;
           }
 
-/* Responsive */
-@media (max-width: 576px) {
-    .ratio-3-2 {
-        padding-bottom: 75%; /* Ratio 4:3 sur mobile */
-    }
-}
-</style>
+          /* Responsive */
+          @media (max-width: 576px) {
+              .ratio-3-2 {
+                  padding-bottom: 75%; /* Ratio 4:3 sur mobile */
+              }
+          }
+          </style>
             
             {{-- Status Badge --}}
             <div class="position-absolute top-0 end-0 m-3">
