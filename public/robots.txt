@@ -1,4 +1,3 @@
 User-agent: *
 Allow: /
-
-Sitemap: https://miniblog-myrd.onrender.com
+Sitemap: https://miniblog-myrd.onrender.com/sitemap.xml
