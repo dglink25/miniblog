@@ -10,11 +10,12 @@
 
 <div class="row g-3">
   @foreach($articles as $article)
+  @if($article->status === 'validated')
     <div class="col-12 col-md-6 col-lg-4">
       <div class="card h-100 shadow-sm">
         @php $img=$article->media->firstWhere('type','image'); @endphp
         @if($img)
-          <img class="card-img-top" src="{{ $img->file_path}}" alt="">
+          <img class="card-img-top" src="{{ $article->image_path }}" alt="">
         @elseif($article->image_path)
           <img class="card-img-top" src="{{ $article->image_path }}" alt="">
         @endif
@@ -25,6 +26,9 @@
         </div>
       </div>
     </div>
+    @else
+<p class="text-muted">Aucun article publié.</p>
+@endif
   @endforeach
 </div>
 

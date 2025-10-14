@@ -175,25 +175,81 @@
               $thumb = $article->media->firstWhere('type','image') ?? null;
             @endphp
             
-            @if ($thumb)
-              <a href="{{ route('articles.show', $article) }}">
-                <img src="{{ $thumb->file_path }}" 
-                   class="card-img-top article-image" 
-                   alt="Image article {{ $article->title }}"
-                   loading="lazy">
+            @if ($article->image_path)
+              <a href="{{ route('articles.show', $article) }}" class="article-image-link">
+                  <div class="image-container ratio-3-2">
+                      <img src="{{ $article->image_path }}" 
+                          class="article-image" 
+                          alt="Image article {{ $article->title }}"
+                          loading="lazy">
+                  </div>
               </a>
-            @elseif ($article->image_path)
-            <a href="{{ route('articles.show', $article) }}">
-              <img src="{{ $article->image_path }}" 
-                   class="card-img-top article-image" 
-                   alt="Image article {{ $article->title }}"
-                   loading="lazy">
-            </a>
-            @else
-              <div class="card-img-top article-image-placeholder d-flex align-items-center justify-content-center bg-light">
-                <i class="bi bi-image text-muted display-4"></i>
+          @else
+              <div class="article-image-placeholder ratio-3-2">
+                  <div class="placeholder-content">
+                      <i class="bi bi-image text-muted"></i>
+                      <span class="placeholder-text">Aucune image</span>
+                  </div>
               </div>
-            @endif
+          @endif
+
+          <style>
+          /* Container avec ratio fixe */
+          .image-container, .article-image-placeholder {
+              position: relative;
+              width: 100%;
+              overflow: hidden;
+              border-radius: 8px;
+              background: #f8f9fa;
+          }
+
+          .ratio-3-2 {
+              padding-bottom: 66.67%; /* Ratio 3:2 */
+          }
+
+          /* Image responsive */
+          .article-image {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              object-fit: cover;
+              object-position: center;
+          }
+
+          /* Placeholder */
+          .article-image-placeholder {
+              background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+              border: 2px dashed #dee2e6;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+          }
+
+          .placeholder-content {
+              text-align: center;
+              color: #6c757d;
+          }
+
+          .placeholder-content i {
+              font-size: 2rem;
+              margin-bottom: 0.5rem;
+              display: block;
+          }
+
+          .placeholder-text {
+              font-size: 0.875rem;
+              font-weight: 500;
+          }
+
+/* Responsive */
+@media (max-width: 576px) {
+    .ratio-3-2 {
+        padding-bottom: 75%; /* Ratio 4:3 sur mobile */
+    }
+}
+</style>
             
             {{-- Status Badge --}}
             <div class="position-absolute top-0 end-0 m-3">
