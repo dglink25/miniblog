@@ -68,9 +68,6 @@
           <i class="bi bi-megaphone-fill text-warning me-2 fs-5"></i>
           <strong class="text-warning">Annonce importante</strong>
           @if($a->is_pinned) 
-            <span class="badge bg-warning text-dark ms-2">
-              <i class="bi bi-pin-angle-fill me-1"></i>Épinglée
-            </span>
           @endif
           <span class="ms-auto small text-muted">
             {{ $a->published_at?->diffForHumans() }}
@@ -304,14 +301,51 @@
     @endforeach
   </div>
 
-  {{-- Pagination --}}
-  @if($articles->hasPages())
-    <div class="mt-5">
-      <nav aria-label="Pagination des articles">
-        {{ $articles->links() }}
+  {{-- Pagination personnalisée --}}
+  @if ($articles->hasPages())
+    <div class="mt-8 flex justify-center">
+      <nav aria-label="Pagination des articles" class="flex flex-wrap items-center gap-2">
+        {{-- Lien "Précédent" --}}
+        @if ($articles->onFirstPage())
+          <span class="px-4 py-2 text-sm font-semibold text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed">
+            Précédent
+          </span>
+        @else
+          <a href="{{ $articles->previousPageUrl() }}" 
+            class="px-4 py-2 text-sm font-semibold text-indigo-600 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50 transition">
+            Précédent
+          </a>
+        @endif
+
+        {{-- Liens de pages --}}
+        @foreach ($articles->links()->elements[0] ?? [] as $page => $url)
+          @if ($page == $articles->currentPage())
+            <span class="px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-lg shadow">
+              {{ $page }}
+            </span>
+          @else
+            <a href="{{ $url }}" 
+              class="px-4 py-2 text-sm font-medium text-indigo-600 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50 transition">
+              {{ $page }}
+            </a>
+          @endif
+        @endforeach
+
+        {{-- Lien "Suivant" --}}
+        @if ($articles->hasMorePages())
+          <a href="{{ $articles->nextPageUrl() }}" 
+            class="px-4 py-2 text-sm font-semibold text-indigo-600 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50 transition">
+            Suivant
+          </a>
+        @else
+          <span class="px-4 py-2 text-sm font-semibold text-gray-400 bg-gray-100 rounded-lg cursor-not-allowed">
+            Suivant
+          </span>
+        @endif
       </nav>
     </div>
   @endif
+
 </div>
 
 <style>

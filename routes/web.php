@@ -139,7 +139,8 @@ Route::middleware('auth')->group(function () {
 // NOTES GLOBALES (site rating)
 // -----------------------------
 Route::post('/ratings', [SiteRatingController::class,'store'])->name('ratings.store');
-
+Route::post('/ratings', [SiteRatingController::class, 'store'])->middleware('auth')->name('ratings.store');
+Route::get('/ratings', [SiteRatingController::class, 'index'])->name('ratings.index');
 // -----------------------------
 // SUIVI (Follow / Unfollow)
 // -----------------------------

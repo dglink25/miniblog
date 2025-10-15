@@ -16,7 +16,7 @@
   <meta property="og:description" content="Partagez vos idées, projets et articles sur une plateforme simple et rapide.">
   <meta property="og:image" content="https://miniblog-myrd.onrender.com/uploads/affiche-miniblog.jpg">
   <meta name="author" content="DGLINK">
-
+  
   <title>{{ config('app.name', $settings->site_name ?? 'DGLink_Pub') }}</title>
 
   {{-- Bootstrap CSS --}}
@@ -687,26 +687,23 @@
       </div>
       
       <div class="col-lg-3 col-md-6 mb-4">
-        <h5 class="mb-3">Notez notre plateforme</h5>
+        <h5 class="mb-3 text-lg font-semibold text-gray-800">⭐ Avis global de notre plateforme</h5>
         @php
-          $avg = round(\App\Models\Rating::avg('stars') ?? 0, 2);
-          $countRatings = \App\Models\Rating::count();
+          $avg = round(\App\Models\SiteRating::avg('stars') ?? 0, 2);
+          $countRatings = \App\Models\SiteRating::count();
         @endphp
-        <div class="rating-stars mb-3">
-          <div class="stars">
-            @for($i = 1; $i <= 5; $i++)
-              @if($i <= floor($avg))
-                <i class="fas fa-star"></i>
-              @elseif($i - 0.5 <= $avg)
-                <i class="fas fa-star-half-alt"></i>
-              @else
-                <i class="far fa-star"></i>
-              @endif
-            @endfor
-          </div>
-          <span class="rating-value">{{ $avg }}/5</span>
-        </div>
-        <p class="text-light small mb-3">{{ $countRatings }} avis</p>
+
+        <p class="text-sm text-gray-500 mb-3">
+          {{ $countRatings }} ont déjà noté cette plateforme
+        </p>
+
+        <center>
+          <a href="{{ route('ratings.index') }}" style="color:blue;">
+            Voir tous les avis
+          </a>
+        </center>
+        <br>
+
         @auth
           <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#rateModal">
             <i class="bi bi-star-fill me-2"></i>Noter la plateforme
@@ -735,139 +732,139 @@
 
 {{-- LOADING SYSTEM SCRIPT --}}
 <script>
-class LoadingSystem {
-  constructor() {
-    this.overlay = document.getElementById('loadingOverlay');
-    this.isLoading = false;
-    this.init();
-  }
+  class LoadingSystem {
+    constructor() {
+      this.overlay = document.getElementById('loadingOverlay');
+      this.isLoading = false;
+      this.init();
+    }
 
-  init() {
-    // Intercept all navigation links
-    document.addEventListener('click', (e) => {
-      const link = e.target.closest('a');
-      if (link && this.shouldShowLoading(link)) {
-        e.preventDefault();
-        this.show();
-        
-        // Navigate after showing loading
-        setTimeout(() => {
-          window.location.href = link.href;
-        }, 100);
-      }
-    });
+    init() {
+      // Intercept all navigation links
+      document.addEventListener('click', (e) => {
+        const link = e.target.closest('a');
+        if (link && this.shouldShowLoading(link)) {
+          e.preventDefault();
+          this.show();
+          
+          // Navigate after showing loading
+          setTimeout(() => {
+            window.location.href = link.href;
+          }, 100);
+        }
+      });
 
-    // Intercept form submissions
-    document.addEventListener('submit', (e) => {
-      if (this.shouldShowLoading(e.target)) {
-        this.show();
-      }
-    });
+      // Intercept form submissions
+      document.addEventListener('submit', (e) => {
+        if (this.shouldShowLoading(e.target)) {
+          this.show();
+        }
+      });
 
-    // Hide loading when page is fully loaded
-    window.addEventListener('load', () => {
-      this.hide();
-    });
-
-    // Hide loading when going back/forward
-    window.addEventListener('pageshow', (e) => {
-      if (e.persisted) {
+      // Hide loading when page is fully loaded
+      window.addEventListener('load', () => {
         this.hide();
+      });
+
+      // Hide loading when going back/forward
+      window.addEventListener('pageshow', (e) => {
+        if (e.persisted) {
+          this.hide();
+        }
+      });
+    }
+
+    shouldShowLoading(element) {
+      // Don't show loading for external links, mailto, tel, etc.
+      if (element.target === '_blank') return false;
+      if (element.href && (
+        element.href.startsWith('mailto:') ||
+        element.href.startsWith('tel:') ||
+        element.href.startsWith('javascript:') ||
+        element.href.includes('#')
+      )) return false;
+
+      // Don't show loading for same page anchors
+      if (element.hash && element.pathname === window.location.pathname) return false;
+
+      // Show loading for internal navigation and forms
+      return element.href && element.href.startsWith(window.location.origin) ||
+            element.tagName === 'FORM';
+    }
+
+    show(message = null) {
+      if (this.isLoading) return;
+      
+      this.isLoading = true;
+      
+      // Update message if provided
+      if (message) {
+        const textElement = this.overlay.querySelector('.loading-text');
+        if (textElement) {
+          textElement.innerHTML = message + '<span class="loading-dots"></span>';
+        }
       }
-    });
-  }
+      
+      this.overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
 
-  shouldShowLoading(element) {
-    // Don't show loading for external links, mailto, tel, etc.
-    if (element.target === '_blank') return false;
-    if (element.href && (
-      element.href.startsWith('mailto:') ||
-      element.href.startsWith('tel:') ||
-      element.href.startsWith('javascript:') ||
-      element.href.includes('#')
-    )) return false;
-
-    // Don't show loading for same page anchors
-    if (element.hash && element.pathname === window.location.pathname) return false;
-
-    // Show loading for internal navigation and forms
-    return element.href && element.href.startsWith(window.location.origin) ||
-           element.tagName === 'FORM';
-  }
-
-  show(message = null) {
-    if (this.isLoading) return;
-    
-    this.isLoading = true;
-    
-    // Update message if provided
-    if (message) {
+    hide() {
+      this.isLoading = false;
+      this.overlay.classList.remove('active');
+      document.body.style.overflow = '';
+      
+      // Reset to default message
       const textElement = this.overlay.querySelector('.loading-text');
       if (textElement) {
-        textElement.innerHTML = message + '<span class="loading-dots"></span>';
+        textElement.innerHTML = 'Veuillez patienter<span class="loading-dots"></span>';
       }
     }
-    
-    this.overlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
   }
 
-  hide() {
-    this.isLoading = false;
-    this.overlay.classList.remove('active');
-    document.body.style.overflow = '';
-    
-    // Reset to default message
-    const textElement = this.overlay.querySelector('.loading-text');
-    if (textElement) {
-      textElement.innerHTML = 'Veuillez patienter<span class="loading-dots"></span>';
-    }
-  }
-}
+  // Initialize loading system
+  const loadingSystem = new LoadingSystem();
 
-// Initialize loading system
-const loadingSystem = new LoadingSystem();
-
-// Manual control for AJAX requests or other async operations
-window.showLoading = (message = null) => loadingSystem.show(message);
-window.hideLoading = () => loadingSystem.hide();
+  // Manual control for AJAX requests or other async operations
+  window.showLoading = (message = null) => loadingSystem.show(message);
+  window.hideLoading = () => loadingSystem.hide();
 </script>
 
 {{-- Polling notifications (15s) --}}
 @auth
 <script>
-(function(){
-  let last = {{ $unreadCount }};
-  async function tick(){
-    try{
-      const r = await fetch('{{ route('notifications.unreadCount') }}', {headers:{'X-Requested-With':'XMLHttpRequest'}});
-      const {count} = await r.json();
-      const badge = document.getElementById('notifBadge');
-      if(count !== last){
-        if(count > last){
-          document.getElementById('notifSound')?.play().catch(()=>{});
-        }
-        last = count;
-        if(count>0){
-          if(!badge){
-            const a=document.querySelector('#notifDrop');
-            const span=document.createElement('span');
-            span.id='notifBadge';
-            span.className='badge bg-danger rounded-pill badge-notif';
-            span.textContent=count;
-            a.appendChild(span);
-          } else {
-            badge.textContent=count;
+  (function(){
+    let last = {{ $unreadCount }};
+    async function tick(){
+      try{
+        const r = await fetch('{{ route('notifications.unreadCount') }}', {headers:{'X-Requested-With':'XMLHttpRequest'}});
+        const {count} = await r.json();
+        const badge = document.getElementById('notifBadge');
+        if(count !== last){
+          if(count > last){
+            document.getElementById('notifSound')?.play().catch(()=>{});
           }
-        } else {
-          badge?.remove();
+          last = count;
+          if(count>0){
+            if(!badge){
+              const a=document.querySelector('#notifDrop');
+              const span=document.createElement('span');
+              span.id='notifBadge';
+              span.className='badge bg-danger rounded-pill badge-notif';
+              span.textContent=count;
+              a.appendChild(span);
+            } else {
+              badge.textContent=count;
+            }
+          } else {
+            badge?.remove();
+          }
         }
-      }
-    }catch(e){}
-    setTimeout(tick, 15000);
-  }
-  tick();
-})();
+      }catch(e){}
+      setTimeout(tick, 15000);
+    }
+    tick();
+  })();
 </script>
 @endauth
 
@@ -913,18 +910,18 @@ toTop?.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'
 </div>
 
 <script>
-// Effet étoiles
-const stars = document.querySelectorAll('.star-label');
-stars.forEach((star, idx) => {
-  star.addEventListener('mouseenter', () => {
-    stars.forEach((s, i) => s.textContent = i <= idx ? '★' : '☆');
+  // Effet étoiles
+  const stars = document.querySelectorAll('.star-label');
+  stars.forEach((star, idx) => {
+    star.addEventListener('mouseenter', () => {
+      stars.forEach((s, i) => s.textContent = i <= idx ? '★' : '☆');
+    });
   });
-});
-document.querySelectorAll('input[name="stars"]').forEach(input => {
-  input.addEventListener('change', () => {
-    stars.forEach((s, i) => s.textContent = i < input.value ? '★' : '☆');
+  document.querySelectorAll('input[name="stars"]').forEach(input => {
+    input.addEventListener('change', () => {
+      stars.forEach((s, i) => s.textContent = i < input.value ? '★' : '☆');
+    });
   });
-});
 </script>
 
 </body>

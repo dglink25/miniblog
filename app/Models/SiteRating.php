@@ -14,8 +14,7 @@ class SiteRating extends Model{
     ];
 
     // Un rating appartient à un utilisateur
-    public function user()
-    {
+    public function user(){
         return $this->belongsTo(User::class);
     }
 }
