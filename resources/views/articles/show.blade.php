@@ -105,7 +105,7 @@
                 {{-- Media Gallery --}}
                 @if($article->media->count() > 0)
                     <div class="media-gallery mb-4">
-                        <h3 class="h5 mb-3 text-muted">Médias associés</h3>
+                        <center><h3 class="h5 mb-3 text-muted">Médias associés</h3></center>
                         <div class="row g-2 g-sm-3">
                             @foreach ($article->media as $m)
                                 <div class="col-6 col-sm-4 col-lg-3">
@@ -119,16 +119,8 @@
                                                      loading="lazy">
                                             </div>
                                         @elseif ($m->isVideo())
-                                            <div class="video-ratio-container">
-                                                <video controls class="media-item cursor-zoom" 
-                                                       onclick="openVideoLightbox('{{ $m->file_path }}')">
-                                                    <source src="{{ $m->file_path }}" type="{{ $m->mime_type }}">
-                                                    Votre navigateur ne supporte pas la lecture de vidéos.
-                                                </video>
-                                                <div class="video-overlay">
-                                                    <i class="bi bi-play-circle-fill"></i>
-                                                </div>
-                                            </div>
+                                            <video src="{{ $m->file_path }}" controls style="max-height:120px; width:100%;"></video>
+                                            
                                         @elseif ($m->isAudio())
                                             <div class="audio-container p-2 p-sm-3 bg-light d-flex align-items-center">
                                                 <audio controls class="w-100">

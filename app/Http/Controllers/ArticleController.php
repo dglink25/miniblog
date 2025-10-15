@@ -110,14 +110,30 @@ class ArticleController extends Controller{
             $uploadApi = new UploadApi();
 
             foreach ($request->file('media') as $file) {
-                $uploaded = $uploadApi->upload(
+                $mime = $file->getMimeType();
+                $folder = 'articles/media';
+
+                if (str_starts_with($mime, 'video')) {
+                    // 🔹 Upload vidéo en mode "large"
+                    $uploaded = $uploadApi->upload(
                     $file->getRealPath(),
-                    ['folder' => 'articles/media']
+                    [
+                        'folder' => $folder,
+                        'resource_type' => 'video',
+                        'chunk_size' => 6000000, // 6 Mo
+                    ]
                 );
 
-                $mime = $file->getMimeType();
+                } else {
+                    // 🔹 Upload image / fichier normal
+                    $uploaded = $uploadApi->upload(
+                        $file->getRealPath(),
+                        ['folder' => $folder]
+                    );
+                }
+
                 $type = str_starts_with($mime, 'image') ? 'image'
-                        : (str_starts_with($mime, 'video') ? 'video' : 'file');
+                    : (str_starts_with($mime, 'video') ? 'video' : 'file');
 
                 $article->media()->create([
                     'file_path' => $uploaded['secure_url'],
@@ -126,6 +142,7 @@ class ArticleController extends Controller{
                 ]);
             }
         }
+
 
         return redirect()->route('articles.mine')
             ->with('success', 'Article enregistré avec succès !');
@@ -160,78 +177,108 @@ class ArticleController extends Controller{
     return view('articles.edit', compact('article'));
 }
 
-public function update(UpdateArticleRequest $request, Article $article): RedirectResponse
-{
-    $this->authorize('update', $article);
+    public function update(UpdateArticleRequest $request, Article $article): RedirectResponse{
+        $this->authorize('update', $article);
 
-    $data = $request->only('title','content');
-    $uploadApi = new UploadApi();
+        $data = $request->only('title','content');
+        $uploadApi = new UploadApi();
 
-    // 🔹 Image principale
-    if ($request->hasFile('image')) {
-        if ($article->image_path) {
-            $publicId = pathinfo($article->image_path, PATHINFO_FILENAME);
-            $uploadApi->destroy("articles/{$publicId}");
-        }
+        // 🔹 Image principale
+        if ($request->hasFile('image')) {
+            if ($article->image_path) {
+                $publicId = pathinfo($article->image_path, PATHINFO_FILENAME);
+                $uploadApi->destroy("articles/{$publicId}");
+            }
 
-        $uploaded = $uploadApi->upload(
-            $request->file('image')->getRealPath(),
-            ['folder' => 'articles']
-        );
-        $data['image_path'] = $uploaded['secure_url'];
-    }
-
-    // 🔹 Médias multiples
-    if ($request->hasFile('media')) {
-        foreach ($request->file('media') as $file) {
             $uploaded = $uploadApi->upload(
-                $file->getRealPath(),
-                ['folder' => 'articles/media']
+                $request->file('image')->getRealPath(),
+                ['folder' => 'articles']
             );
-
-            $mime = $file->getClientMimeType();
-            $type = str_contains($mime, 'image')
-                ? 'image'
-                : (str_contains($mime, 'video') ? 'video' : 'file');
-
-            $article->media()->create([
-                'file_path' => $uploaded['secure_url'],
-                'mime_type' => $mime,
-                'type' => $type,
-            ]);
+            $data['image_path'] = $uploaded['secure_url'];
         }
+
+        // 🔹 Médias multiples (mise à jour)
+        if ($request->hasFile('media')) {
+            $cloudinary = new Cloudinary(env('CLOUDINARY_URL'));
+            $uploadApi = new UploadApi();
+
+            foreach ($request->file('media') as $file) {
+                $mime = $file->getMimeType();
+                $folder = 'articles/media';
+
+                // 🔸 Options de base
+                $options = ['folder' => $folder];
+
+                // 🔹 Si c’est une vidéo, on ajoute le type et la gestion des gros fichiers
+                if (str_starts_with($mime, 'video')) {
+                    $options['resource_type'] = 'video';
+                    $options['chunk_size'] = 6000000; // 6 Mo
+                }
+
+                // 🔹 Upload vers Cloudinary
+                $uploaded = $uploadApi->upload(
+                    $file->getRealPath(),
+                    $options
+                );
+
+                // 🔹 Détermination du type de média
+                $type = str_starts_with($mime, 'image')
+                    ? 'image'
+                    : (str_starts_with($mime, 'video') ? 'video' : 'file');
+
+                // 🔹 Enregistrement en base
+                $article->media()->create([
+                    'file_path' => $uploaded['secure_url'],
+                    'mime_type' => $mime,
+                    'type' => $type,
+                ]);
+            }
+        }
+
+
+        $article->update($data);
+
+        return redirect()->route('articles.show', $article)
+            ->with('success', "L'article a été mis à jour.");
     }
 
-    $article->update($data);
-
-    return redirect()->route('articles.show', $article)
-        ->with('success', "L'article a été mis à jour.");
-}
-
-    public function destroy(Article $article): RedirectResponse
-    {
+    public function destroy(Article $article): RedirectResponse{
         $this->authorize('delete', $article);
 
         $cloudinary = new Cloudinary(env('CLOUDINARY_URL'));
         $uploadApi = new UploadApi();
 
-        // Supprimer tous les médias associés
+        // 🔹 Supprimer les médias associés
         foreach ($article->media as $m) {
-            $publicId = pathinfo($m->file_path, PATHINFO_FILENAME);
-            $uploadApi->destroy("articles/media/{$publicId}");
+            $url = $m->file_path;
+            $mime = $m->mime_type;
+
+            // Extraire le dossier + nom de fichier sans extension
+            $pathParts = pathinfo(parse_url($url, PHP_URL_PATH));
+            $publicId = 'articles/media/' . $pathParts['filename'];
+
+            // Déterminer le type de ressource (image ou vidéo)
+            $resourceType = str_starts_with($mime, 'video') ? 'video' : 'image';
+
+            // Suppression sur Cloudinary
+            $uploadApi->destroy($publicId, ['resource_type' => $resourceType]);
         }
 
-        // Supprimer l'image principale
+        // 🔹 Supprimer l'image principale
         if ($article->image_path) {
-            $publicId = pathinfo($article->image_path, PATHINFO_FILENAME);
-            $uploadApi->destroy("articles/{$publicId}");
+            $pathParts = pathinfo(parse_url($article->image_path, PHP_URL_PATH));
+            $publicId = 'articles/' . $pathParts['filename'];
+
+            $uploadApi->destroy($publicId, ['resource_type' => 'image']);
         }
 
+        // 🔹 Supprimer l'article en base
         $article->delete();
 
         return redirect()->route('articles.index')
-            ->with('success', "L'article a été supprimé.");
+            ->with('success', "L'article et tous ses fichiers Cloudinary ont été supprimés.");
     }
+
 
 
     public function mine(){

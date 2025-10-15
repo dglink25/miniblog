@@ -267,5 +267,10 @@ Route::get('/test-error', function () {
     abort(500);
 });
 
+// Dans routes/web.php
+Route::fallback(function () {
+    return response()->view('errors.404', [], 404);
+});
+
 
 Route::get('/sitemap.xml', [SitemapController::class, 'index']);

@@ -27,4 +27,20 @@ class Media extends Model
     public function isAudio(): bool{
         return str_starts_with($this->mime_type, 'audio/');
     }
+
+    public function getVideoUrl(): string
+    {
+        return $this->file_path;
+    }
+
+    public function getVideoThumbnail(): string
+    {
+        // Génère l'URL de la miniature Cloudinary
+        $cloudinaryUrl = $this->file_path;
+        return str_replace(
+            '/video/upload/',
+            '/video/upload/fl_splice,f_jpg,w_640,h_360,c_fill/',
+            $cloudinaryUrl
+        );
+    }
 }

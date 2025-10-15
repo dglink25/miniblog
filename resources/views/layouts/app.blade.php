@@ -40,6 +40,128 @@
       --transition: all 0.3s ease;
     }
 
+    /* ===== LOADING OVERLAY STYLES ===== */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .loading-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .loading-spinner {
+      width: 80px;
+      height: 80px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    .loading-spinner::after {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      border: 4px solid transparent;
+      border-top: 4px solid var(--accent-color);
+      border-radius: 50%;
+      animation: spin 1.5s linear infinite reverse;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--dark-color);
+      margin-bottom: 0.5rem;
+      text-align: center;
+    }
+
+    .loading-subtext {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-align: center;
+      max-width: 300px;
+      line-height: 1.4;
+    }
+
+    .loading-dots {
+      display: inline-block;
+      position: relative;
+    }
+
+    .loading-dots::after {
+      content: '...';
+      position: absolute;
+      animation: dots 1.5s steps(4, end) infinite;
+    }
+
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+
+    /* Mobile optimization for loading */
+    @media (max-width: 768px) {
+      .loading-spinner {
+        width: 60px;
+        height: 60px;
+        border-width: 3px;
+      }
+
+      .loading-text {
+        font-size: 1.1rem;
+      }
+
+      .loading-subtext {
+        font-size: 0.85rem;
+        max-width: 250px;
+      }
+    }
+
+    /* Reduced motion support */
+    @media (prefers-reduced-motion: reduce) {
+      .loading-spinner {
+        animation: none;
+        border-top-color: var(--primary-color);
+      }
+
+      .loading-spinner::after {
+        animation: none;
+        display: none;
+      }
+
+      .loading-dots::after {
+        animation: none;
+        content: '...';
+      }
+    }
+
     body {
       font-family: 'Inter', sans-serif;
       background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -376,6 +498,13 @@
 </head>
 <body class="bg-light">
 
+{{-- LOADING OVERLAY --}}
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Veuillez patienter<span class="loading-dots"></span></div>
+  <div class="loading-subtext">Chargement de votre contenu en cours</div>
+</div>
+
 {{-- NAVBAR --}}
 <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
   <div class="container">
@@ -547,7 +676,11 @@
         <ul>
           <li><a href="#">Centre d'aide</a></li>
           <li><a href="{{ route('suggestions.create') }}">Suggestions</a></li>
-          <li><a href="#">Contact</a></li>
+          <li>
+            <a href="mailto:dglin25@gmail.com?subject=Demande%20d'information&body=Bonjour%20DGLINK,%0AJe%20souhaite%20en%20savoir%20plus%20sur...">
+              Contact
+            </a>
+          </li>
           <li><a href="#">Mentions légales</a></li>
           <li><a href="#">Politique de confidentialité</a></li>
         </ul>
@@ -599,6 +732,106 @@
 <audio id="notifSound" preload="auto">
   <source src="{{ asset('sounds/bell.mp3') }}" type="audio/mpeg">
 </audio>
+
+{{-- LOADING SYSTEM SCRIPT --}}
+<script>
+class LoadingSystem {
+  constructor() {
+    this.overlay = document.getElementById('loadingOverlay');
+    this.isLoading = false;
+    this.init();
+  }
+
+  init() {
+    // Intercept all navigation links
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a');
+      if (link && this.shouldShowLoading(link)) {
+        e.preventDefault();
+        this.show();
+        
+        // Navigate after showing loading
+        setTimeout(() => {
+          window.location.href = link.href;
+        }, 100);
+      }
+    });
+
+    // Intercept form submissions
+    document.addEventListener('submit', (e) => {
+      if (this.shouldShowLoading(e.target)) {
+        this.show();
+      }
+    });
+
+    // Hide loading when page is fully loaded
+    window.addEventListener('load', () => {
+      this.hide();
+    });
+
+    // Hide loading when going back/forward
+    window.addEventListener('pageshow', (e) => {
+      if (e.persisted) {
+        this.hide();
+      }
+    });
+  }
+
+  shouldShowLoading(element) {
+    // Don't show loading for external links, mailto, tel, etc.
+    if (element.target === '_blank') return false;
+    if (element.href && (
+      element.href.startsWith('mailto:') ||
+      element.href.startsWith('tel:') ||
+      element.href.startsWith('javascript:') ||
+      element.href.includes('#')
+    )) return false;
+
+    // Don't show loading for same page anchors
+    if (element.hash && element.pathname === window.location.pathname) return false;
+
+    // Show loading for internal navigation and forms
+    return element.href && element.href.startsWith(window.location.origin) ||
+           element.tagName === 'FORM';
+  }
+
+  show(message = null) {
+    if (this.isLoading) return;
+    
+    this.isLoading = true;
+    
+    // Update message if provided
+    if (message) {
+      const textElement = this.overlay.querySelector('.loading-text');
+      if (textElement) {
+        textElement.innerHTML = message + '<span class="loading-dots"></span>';
+      }
+    }
+    
+    this.overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  hide() {
+    this.isLoading = false;
+    this.overlay.classList.remove('active');
+    document.body.style.overflow = '';
+    
+    // Reset to default message
+    const textElement = this.overlay.querySelector('.loading-text');
+    if (textElement) {
+      textElement.innerHTML = 'Veuillez patienter<span class="loading-dots"></span>';
+    }
+  }
+}
+
+// Initialize loading system
+const loadingSystem = new LoadingSystem();
+
+// Manual control for AJAX requests or other async operations
+window.showLoading = (message = null) => loadingSystem.show(message);
+window.hideLoading = () => loadingSystem.hide();
+</script>
 
 {{-- Polling notifications (15s) --}}
 @auth
