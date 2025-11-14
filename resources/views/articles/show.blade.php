@@ -139,7 +139,10 @@
                 $mainImage = $article->image_path;
                 $hasVideo = $mainVideo ? true : false;
                 $hasImage = $mainImage ? true : false;
-                $shareImage = $mainImage ?: ($article->media->where('type', 'image')->first()->file_path ?? null);
+                $articleUrl = request()->fullUrl();
+                $articleTitle = $article->title;
+                $articleDescription = $article->content ? Str::limit(strip_tags($article->content), 150) : '';
+                $articleImage = $mainImage ? url($mainImage) : url('img/default-article-image.jpg');
             @endphp
 
             @if($mainVideo)
@@ -336,98 +339,60 @@
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body p-4">
-                            @php
-                                $url = urlencode(request()->fullUrl());
-                                $title = urlencode($article->title);
-                                $content = $article->content ? Str::limit(strip_tags($article->content), 150) : '';
-                                $description = urlencode($content);
-                                $image = $shareImage ? urlencode($shareImage) : '';
-                                
-                                $video = null;
-                                if ($article->media) {
-                                    $video = $article->media->where('type', 'video')->first();
-                                }
-                                $hasVideo = (bool) $video;
-                                $videoUrl = '';
-                                if ($video) {
-                                    $videoUrl = urlencode($video->file_path);
-                                }
-                                
-                                // WhatsApp message with enhanced formatting
-                                $whatsappContent = $article->content ? Str::limit(strip_tags($article->content), 200) : 'Découvrez cette publication intéressante';
-                                $whatsappMessage = urlencode("📢 *{$article->title}*
-
-{$whatsappContent}
-
-🔗 " . request()->fullUrl() . "
-
-📱 Partagé via FlashPost");
-                            @endphp
-                            
                             <div class="row g-3">
                                 {{-- WhatsApp --}}
                                 <div class="col-6 col-sm-4">
-                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" 
-                                       style="background:#25D366" 
-                                       href="https://wa.me/?text={{ $whatsappMessage }}"
-                                       target="_blank"
-                                       onclick="trackShare('whatsapp')">
+                                    <button class="share-platform-btn btn btn-lg w-100 text-white hover-lift" 
+                                            style="background:#25D366" 
+                                            onclick="shareOnWhatsApp()">
                                         <i class="fab fa-whatsapp fa-2x mb-2"></i>
                                         <span class="d-block fw-bold">WhatsApp</span>
                                         <small class="opacity-75">Partager avec contacts</small>
-                                    </a>
+                                    </button>
                                 </div>
                                 
                                 {{-- Facebook --}}
                                 <div class="col-6 col-sm-4">
-                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" 
-                                       style="background:#1877F2" 
-                                       href="https://www.facebook.com/sharer/sharer.php?u={{ $url }}&quote={{ $title }}"
-                                       target="_blank"
-                                       onclick="trackShare('facebook')">
+                                    <button class="share-platform-btn btn btn-lg w-100 text-white hover-lift" 
+                                            style="background:#1877F2" 
+                                            onclick="shareOnFacebook()">
                                         <i class="fab fa-facebook-f fa-2x mb-2"></i>
                                         <span class="d-block fw-bold">Facebook</span>
                                         <small class="opacity-75">Partager sur Facebook</small>
-                                    </a>
+                                    </button>
                                 </div>
                                 
                                 {{-- Twitter --}}
                                 <div class="col-6 col-sm-4">
-                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" 
-                                       style="background:#000000" 
-                                       href="https://twitter.com/intent/tweet?url={{ $url }}&text={{ $title }}&hashtags=FlashPost"
-                                       target="_blank"
-                                       onclick="trackShare('twitter')">
+                                    <button class="share-platform-btn btn btn-lg w-100 text-white hover-lift" 
+                                            style="background:#000000" 
+                                            onclick="shareOnTwitter()">
                                         <i class="fab fa-x-twitter fa-2x mb-2"></i>
                                         <span class="d-block fw-bold">Twitter</span>
                                         <small class="opacity-75">Tweet cette publication</small>
-                                    </a>
+                                    </button>
                                 </div>
                                 
                                 {{-- Telegram --}}
                                 <div class="col-6 col-sm-4">
-                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" 
-                                       style="background:#0088cc" 
-                                       href="https://t.me/share/url?url={{ $url }}&text={{ $title }}"
-                                       target="_blank"
-                                       onclick="trackShare('telegram')">
+                                    <button class="share-platform-btn btn btn-lg w-100 text-white hover-lift" 
+                                            style="background:#0088cc" 
+                                            onclick="shareOnTelegram()">
                                         <i class="fab fa-telegram fa-2x mb-2"></i>
                                         <span class="d-block fw-bold">Telegram</span>
                                         <small class="opacity-75">Partager sur Telegram</small>
-                                    </a>
+                                    </button>
                                 </div>
                                 
                                 {{-- LinkedIn --}}
                                 <div class="col-6 col-sm-4">
-                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" 
-                                       style="background:#0A66C2" 
-                                       href="https://www.linkedin.com/sharing/share-offsite/?url={{ $url }}"
-                                       target="_blank"
-                                       onclick="trackShare('linkedin')">
+                                    <button class="share-platform-btn btn btn-lg w-100 text-white hover-lift" 
+                                            style="background:#0A66C2" 
+                                            onclick="shareOnLinkedIn()">
                                         <i class="fab fa-linkedin-in fa-2x mb-2"></i>
                                         <span class="d-block fw-bold">LinkedIn</span>
                                         <small class="opacity-75">Partager professionnellement</small>
-                                    </a>
+                                    </button>
                                 </div>
                                 
                                 {{-- Copy Link --}}
@@ -445,8 +410,8 @@
                             {{-- Share Preview --}}
                             <div class="share-preview mt-4 p-3 bg-light rounded-3">
                                 <div class="d-flex align-items-center">
-                                    @if($shareImage)
-                                        <img src="{{ $shareImage }}" 
+                                    @if($article->image_path)
+                                        <img src="{{ $article->image_path }}" 
                                              class="share-preview-image rounded-2 me-3"
                                              alt="Preview"
                                              style="width: 60px; height: 60px; object-fit: cover;">
@@ -1529,381 +1494,447 @@ html {
 </style>
 
 <script>
+// ===== SHARE DATA =====
+const shareData = {
+    url: '{{ $articleUrl }}',
+    title: '{{ $articleTitle }}',
+    description: '{{ $articleDescription }}',
+    image: '{{ $articleImage }}',
+    hasVideo: {{ $hasVideo ? 'true' : 'false' }},
+    videoUrl: '{{ $mainVideo ? $mainVideo->file_path : '' }}'
+};
+
+// ===== ENHANCED SHARE FUNCTIONALITY =====
+function openShareModal() {
+    const shareModal = new bootstrap.Modal(document.getElementById('shareModal'));
+    shareModal.show();
+}
+
+function shareOnWhatsApp() {
+    const message = `📢 *${shareData.title}*
+
+${shareData.description}
+
+${shareData.hasVideo ? '🎥 Vidéo incluse - ' : '📷 '}Découvrez cette publication sur FlashPost!
+
+🔗 ${shareData.url}
+
+_Partagé via FlashPost_`;
+
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`https://wa.me/?text=${encodedMessage}`, '_blank', 'width=600,height=400');
+    trackShare('whatsapp');
+}
+
+function shareOnFacebook() {
+    const encodedUrl = encodeURIComponent(shareData.url);
+    const encodedTitle = encodeURIComponent(shareData.title);
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedTitle}`, '_blank', 'width=600,height=400');
+    trackShare('facebook');
+}
+
+function shareOnTwitter() {
+    const encodedUrl = encodeURIComponent(shareData.url);
+    const encodedText = encodeURIComponent(`${shareData.title} - Découvrez sur FlashPost!`);
+    window.open(`https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}&hashtags=FlashPost`, '_blank', 'width=600,height=400');
+    trackShare('twitter');
+}
+
+function shareOnTelegram() {
+    const encodedUrl = encodeURIComponent(shareData.url);
+    const encodedText = encodeURIComponent(`${shareData.title}\n\n${shareData.description}\n\n${shareData.url}`);
+    window.open(`https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`, '_blank', 'width=600,height=400');
+    trackShare('telegram');
+}
+
+function shareOnLinkedIn() {
+    const encodedUrl = encodeURIComponent(shareData.url);
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`, '_blank', 'width=600,height=400');
+    trackShare('linkedin');
+}
+
+function copyToClipboard() {
+    navigator.clipboard.writeText(shareData.url).then(() => {
+        const copyBtn = document.querySelector('.copy-link-btn');
+        const originalHTML = copyBtn.innerHTML;
+        
+        copyBtn.innerHTML = '<i class="fas fa-check fa-2x mb-2"></i><span class="d-block fw-bold">Lien copié!</span><small class="opacity-75">Coller où vous voulez</small>';
+        copyBtn.classList.add('copied');
+        
+        // Show success toast
+        const toast = new bootstrap.Toast(document.getElementById('successToast'));
+        toast.show();
+        
+        setTimeout(() => {
+            copyBtn.innerHTML = originalHTML;
+            copyBtn.classList.remove('copied');
+        }, 3000);
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+        alert('Erreur lors de la copie du lien');
+    });
+}
+
+function trackShare(platform) {
+    // Analytics tracking would go here
+    console.log(`Shared on ${platform}`);
+    
+    // Close modal after sharing
+    setTimeout(() => {
+        const shareModal = bootstrap.Modal.getInstance(document.getElementById('shareModal'));
+        if (shareModal) {
+            shareModal.hide();
+        }
+    }, 1000);
+}
+
 // ===== ENHANCED LIGHTBOX FUNCTIONALITY =====
 let currentLightboxIndex = 0;
 let lightboxImages = [];
 
 function openLightbox(imageSrc, caption) {
-  const lightbox = document.getElementById('lightbox');
-  const lightboxImg = document.getElementById('lightboxImage');
-  const captionText = document.getElementById('lightboxCaption');
-  const counter = document.getElementById('lightboxCounter');
-  
-  // Collect all clickable images from enhanced media gallery
-  lightboxImages = Array.from(document.querySelectorAll('.enhanced-media-item[src]'));
-  currentLightboxIndex = lightboxImages.findIndex(img => img.src.includes(imageSrc));
-  
-  if (currentLightboxIndex === -1) {
-    currentLightboxIndex = 0;
-  }
-  
-  // Show lightbox with enhanced animation
-  lightbox.style.display = 'flex';
-  setTimeout(() => {
-    lightbox.classList.add('active');
-  }, 10);
-  
-  lightboxImg.src = imageSrc;
-  captionText.innerHTML = caption || '';
-  updateLightboxCounter();
-  
-  document.body.style.overflow = 'hidden';
-  
-  // Add keyboard event listeners
-  document.addEventListener('keydown', handleLightboxKeydown);
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImage');
+    const captionText = document.getElementById('lightboxCaption');
+    const counter = document.getElementById('lightboxCounter');
+    
+    // Collect all clickable images from enhanced media gallery
+    lightboxImages = Array.from(document.querySelectorAll('.enhanced-media-item[src]'));
+    currentLightboxIndex = lightboxImages.findIndex(img => img.src.includes(imageSrc));
+    
+    if (currentLightboxIndex === -1) {
+        currentLightboxIndex = 0;
+    }
+    
+    // Show lightbox with enhanced animation
+    lightbox.style.display = 'flex';
+    setTimeout(() => {
+        lightbox.classList.add('active');
+    }, 10);
+    
+    lightboxImg.src = imageSrc;
+    captionText.innerHTML = caption || '';
+    updateLightboxCounter();
+    
+    document.body.style.overflow = 'hidden';
+    
+    // Add keyboard event listeners
+    document.addEventListener('keydown', handleLightboxKeydown);
 }
 
 function closeLightbox() {
-  const lightbox = document.getElementById('lightbox');
-  lightbox.classList.remove('active');
-  
-  setTimeout(() => {
-    lightbox.style.display = 'none';
-  }, 400);
-  
-  document.body.style.overflow = 'auto';
-  document.removeEventListener('keydown', handleLightboxKeydown);
+    const lightbox = document.getElementById('lightbox');
+    lightbox.classList.remove('active');
+    
+    setTimeout(() => {
+        lightbox.style.display = 'none';
+    }, 400);
+    
+    document.body.style.overflow = 'auto';
+    document.removeEventListener('keydown', handleLightboxKeydown);
 }
 
 function handleLightboxKeydown(event) {
-  if (event.key === 'Escape') {
-    closeLightbox();
-  } else if (event.key === 'ArrowLeft') {
-    navigateLightbox(-1);
-  } else if (event.key === 'ArrowRight') {
-    navigateLightbox(1);
-  }
+    if (event.key === 'Escape') {
+        closeLightbox();
+    } else if (event.key === 'ArrowLeft') {
+        navigateLightbox(-1);
+    } else if (event.key === 'ArrowRight') {
+        navigateLightbox(1);
+    }
 }
 
 function navigateLightbox(direction) {
-  if (lightboxImages.length === 0) return;
-  
-  currentLightboxIndex += direction;
-  
-  if (currentLightboxIndex >= lightboxImages.length) {
-    currentLightboxIndex = 0;
-  } else if (currentLightboxIndex < 0) {
-    currentLightboxIndex = lightboxImages.length - 1;
-  }
-  
-  const lightboxImg = document.getElementById('lightboxImage');
-  const captionText = document.getElementById('lightboxCaption');
-  
-  // Add smooth transition
-  lightboxImg.style.opacity = '0';
-  lightboxImg.style.transform = 'scale(0.95)';
-  
-  setTimeout(() => {
-    lightboxImg.src = lightboxImages[currentLightboxIndex].src;
-    captionText.innerHTML = lightboxImages[currentLightboxIndex].alt || '';
-    lightboxImg.style.opacity = '1';
-    lightboxImg.style.transform = 'scale(1)';
-    updateLightboxCounter();
-  }, 300);
+    if (lightboxImages.length === 0) return;
+    
+    currentLightboxIndex += direction;
+    
+    if (currentLightboxIndex >= lightboxImages.length) {
+        currentLightboxIndex = 0;
+    } else if (currentLightboxIndex < 0) {
+        currentLightboxIndex = lightboxImages.length - 1;
+    }
+    
+    const lightboxImg = document.getElementById('lightboxImage');
+    const captionText = document.getElementById('lightboxCaption');
+    
+    // Add smooth transition
+    lightboxImg.style.opacity = '0';
+    lightboxImg.style.transform = 'scale(0.95)';
+    
+    setTimeout(() => {
+        lightboxImg.src = lightboxImages[currentLightboxIndex].src;
+        captionText.innerHTML = lightboxImages[currentLightboxIndex].alt || '';
+        lightboxImg.style.opacity = '1';
+        lightboxImg.style.transform = 'scale(1)';
+        updateLightboxCounter();
+    }, 300);
 }
 
 function updateLightboxCounter() {
-  const counter = document.getElementById('lightboxCounter');
-  counter.textContent = `${currentLightboxIndex + 1}/${lightboxImages.length}`;
+    const counter = document.getElementById('lightboxCounter');
+    counter.textContent = `${currentLightboxIndex + 1}/${lightboxImages.length}`;
 }
 
 function downloadMedia() {
-  const lightboxImg = document.getElementById('lightboxImage');
-  const link = document.createElement('a');
-  link.href = lightboxImg.src;
-  link.download = 'flashpost-image.jpg';
-  link.click();
+    const lightboxImg = document.getElementById('lightboxImage');
+    const link = document.createElement('a');
+    link.href = lightboxImg.src;
+    link.download = 'flashpost-image.jpg';
+    link.click();
 }
 
 function shareMedia() {
-  const lightboxImg = document.getElementById('lightboxImage');
-  if (navigator.share) {
-    navigator.share({
-      title: '{{ $article->title }}',
-      text: '{{ Str::limit(strip_tags($article->content), 100) }}',
-      url: window.location.href,
-    })
-    .catch(console.error);
-  } else {
-    openShareModal();
-  }
+    if (navigator.share) {
+        navigator.share({
+            title: shareData.title,
+            text: shareData.description,
+            url: shareData.url,
+        })
+        .catch(console.error);
+    } else {
+        openShareModal();
+    }
 }
 
 // ===== ENHANCED VIDEO LIGHTBOX FUNCTIONALITY =====
 function playVideo(videoSrc) {
-  const lightbox = document.getElementById('videoLightbox');
-  const lightboxVideo = document.getElementById('lightboxVideo');
-  
-  lightbox.style.display = 'flex';
-  setTimeout(() => {
-    lightbox.classList.add('active');
-  }, 10);
-  
-  lightboxVideo.src = videoSrc;
-  lightboxVideo.load();
-  lightboxVideo.play().catch(e => {
-    console.log('Autoplay prevented:', e);
-  });
-  
-  document.body.style.overflow = 'hidden';
-  document.addEventListener('keydown', handleVideoLightboxKeydown);
+    const lightbox = document.getElementById('videoLightbox');
+    const lightboxVideo = document.getElementById('lightboxVideo');
+    
+    lightbox.style.display = 'flex';
+    setTimeout(() => {
+        lightbox.classList.add('active');
+    }, 10);
+    
+    lightboxVideo.src = videoSrc;
+    lightboxVideo.load();
+    lightboxVideo.play().catch(e => {
+        console.log('Autoplay prevented:', e);
+    });
+    
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleVideoLightboxKeydown);
 }
 
 function closeVideoLightbox() {
-  const lightbox = document.getElementById('videoLightbox');
-  const lightboxVideo = document.getElementById('lightboxVideo');
-  
-  lightbox.classList.remove('active');
-  lightboxVideo.pause();
-  
-  setTimeout(() => {
-    lightbox.style.display = 'none';
-    lightboxVideo.src = '';
-  }, 400);
-  
-  document.body.style.overflow = 'auto';
-  document.removeEventListener('keydown', handleVideoLightboxKeydown);
+    const lightbox = document.getElementById('videoLightbox');
+    const lightboxVideo = document.getElementById('lightboxVideo');
+    
+    lightbox.classList.remove('active');
+    lightboxVideo.pause();
+    
+    setTimeout(() => {
+        lightbox.style.display = 'none';
+        lightboxVideo.src = '';
+    }, 400);
+    
+    document.body.style.overflow = 'auto';
+    document.removeEventListener('keydown', handleVideoLightboxKeydown);
 }
 
 function handleVideoLightboxKeydown(event) {
-  if (event.key === 'Escape') {
-    closeVideoLightbox();
-  }
+    if (event.key === 'Escape') {
+        closeVideoLightbox();
+    }
 }
 
 function shareVideo() {
-  if (navigator.share) {
-    navigator.share({
-      title: '{{ $article->title }} - Vidéo',
-      text: '🎥 Regardez cette vidéo: {{ Str::limit(strip_tags($article->content), 100) }}',
-      url: window.location.href,
-    })
-    .catch(console.error);
-  } else {
-    openShareModal();
-  }
-}
-
-// ===== ENHANCED SHARE FUNCTIONALITY =====
-function openShareModal() {
-  const shareModal = new bootstrap.Modal(document.getElementById('shareModal'));
-  shareModal.show();
-}
-
-function trackShare(platform) {
-  // Analytics tracking would go here
-  console.log(`Shared on ${platform}`);
-}
-
-function copyToClipboard() {
-  const url = '{{ request()->fullUrl() }}';
-  navigator.clipboard.writeText(url).then(() => {
-    const copyBtn = document.querySelector('.copy-link-btn');
-    const originalHTML = copyBtn.innerHTML;
-    
-    copyBtn.innerHTML = '<i class="fas fa-check fa-2x mb-2"></i><span class="d-block fw-bold">Lien copié!</span><small class="opacity-75">Coller où vous voulez</small>';
-    copyBtn.classList.add('copied');
-    
-    // Show success toast
-    const toast = new bootstrap.Toast(document.getElementById('successToast'));
-    toast.show();
-    
-    setTimeout(() => {
-      copyBtn.innerHTML = originalHTML;
-      copyBtn.classList.remove('copied');
-    }, 3000);
-  }).catch(err => {
-    console.error('Failed to copy: ', err);
-  });
+    if (navigator.share) {
+        navigator.share({
+            title: shareData.title + ' - Vidéo',
+            text: '🎥 Regardez cette vidéo: ' + shareData.description,
+            url: shareData.url,
+        })
+        .catch(console.error);
+    } else {
+        openShareModal();
+    }
 }
 
 // ===== STAR RATING FUNCTIONALITY =====
 function highlightStars(count) {
-  const stars = document.querySelectorAll('.star-btn');
-  stars.forEach((star, index) => {
-    const icon = star.querySelector('i');
-    if (index < count) {
-      icon.className = 'bi bi-star-fill text-warning';
-      star.style.transform = 'scale(1.1)';
-    } else {
-      icon.className = 'bi bi-star';
-      star.style.transform = 'scale(1)';
-    }
-  });
+    const stars = document.querySelectorAll('.star-btn');
+    stars.forEach((star, index) => {
+        const icon = star.querySelector('i');
+        if (index < count) {
+            icon.className = 'bi bi-star-fill text-warning';
+            star.style.transform = 'scale(1.1)';
+        } else {
+            icon.className = 'bi bi-star';
+            star.style.transform = 'scale(1)';
+        }
+    });
 }
 
 function resetStars() {
-  const stars = document.querySelectorAll('.star-btn');
-  stars.forEach(star => {
-    star.querySelector('i').className = 'bi bi-star';
-    star.style.transform = 'scale(1)';
-  });
+    const stars = document.querySelectorAll('.star-btn');
+    stars.forEach(star => {
+        star.querySelector('i').className = 'bi bi-star';
+        star.style.transform = 'scale(1)';
+    });
 }
 
 // ===== SCROLL FUNCTIONS =====
 function scrollToTop() {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function scrollToComments() {
-  const commentsSection = document.querySelector('.comments-section');
-  commentsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const commentsSection = document.querySelector('.comments-section');
+    commentsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ===== AUTO-RESIZE TEXTAREA =====
 function autoResize(textarea) {
-  textarea.style.height = 'auto';
-  textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
 }
 
 // ===== ENHANCED INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize all enhanced functionality
-  initializeEnhancedMedia();
-  initializeEventListeners();
-  initializeAnimations();
+    // Initialize all enhanced functionality
+    initializeEnhancedMedia();
+    initializeEventListeners();
+    initializeAnimations();
+    initializeShareButtons();
 });
 
-function initializeEnhancedMedia() {
-  // Lazy loading for enhanced media items
-  const lazyImages = document.querySelectorAll('.enhanced-media-item');
-  
-  const imageObserver = new IntersectionObserver((entries, observer) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const img = entry.target;
-        img.src = img.dataset.src || img.src;
-        img.classList.remove('lazy');
-        imageObserver.unobserve(img);
-      }
-    });
-  });
+function initializeShareButtons() {
+    // Ensure share buttons work regardless of video presence
+    console.log('Share data initialized:', shareData);
+}
 
-  lazyImages.forEach(img => imageObserver.observe(img));
+function initializeEnhancedMedia() {
+    // Lazy loading for enhanced media items
+    const lazyImages = document.querySelectorAll('.enhanced-media-item');
+    
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.dataset.src || img.src;
+                img.classList.remove('lazy');
+                imageObserver.unobserve(img);
+            }
+        });
+    });
+
+    lazyImages.forEach(img => imageObserver.observe(img));
 }
 
 function initializeEventListeners() {
-  // Close lightboxes on outside click
-  document.addEventListener('click', function(event) {
-    const lightbox = document.getElementById('lightbox');
-    const videoLightbox = document.getElementById('videoLightbox');
+    // Close lightboxes on outside click
+    document.addEventListener('click', function(event) {
+        const lightbox = document.getElementById('lightbox');
+        const videoLightbox = document.getElementById('videoLightbox');
+        
+        if (event.target === lightbox) {
+            closeLightbox();
+        }
+        
+        if (event.target === videoLightbox) {
+            closeVideoLightbox();
+        }
+    });
     
-    if (event.target === lightbox) {
-      closeLightbox();
+    // Video controls for main video
+    const mainVideo = document.querySelector('.main-video-player');
+    const playPauseBtn = document.querySelector('.play-pause-btn');
+    const fullscreenBtn = document.querySelector('.fullscreen-btn');
+    
+    if (mainVideo && playPauseBtn) {
+        playPauseBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (mainVideo.paused) {
+                mainVideo.play();
+                this.innerHTML = '<i class="bi bi-pause-fill"></i>';
+            } else {
+                mainVideo.pause();
+                this.innerHTML = '<i class="bi bi-play-fill"></i>';
+            }
+        });
     }
     
-    if (event.target === videoLightbox) {
-      closeVideoLightbox();
+    if (mainVideo && fullscreenBtn) {
+        fullscreenBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (mainVideo.requestFullscreen) {
+                mainVideo.requestFullscreen();
+            } else if (mainVideo.webkitRequestFullscreen) {
+                mainVideo.webkitRequestFullscreen();
+            } else if (mainVideo.msRequestFullscreen) {
+                mainVideo.msRequestFullscreen();
+            }
+        });
     }
-  });
-  
-  // Video controls for main video
-  const mainVideo = document.querySelector('.main-video-player');
-  const playPauseBtn = document.querySelector('.play-pause-btn');
-  const fullscreenBtn = document.querySelector('.fullscreen-btn');
-  
-  if (mainVideo && playPauseBtn) {
-    playPauseBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      if (mainVideo.paused) {
-        mainVideo.play();
-        this.innerHTML = '<i class="bi bi-pause-fill"></i>';
-      } else {
-        mainVideo.pause();
-        this.innerHTML = '<i class="bi bi-play-fill"></i>';
-      }
+    
+    // Auto-resize all textareas
+    const textareas = document.querySelectorAll('textarea');
+    textareas.forEach(textarea => {
+        textarea.addEventListener('input', function() {
+            autoResize(this);
+        });
+        // Initial resize
+        autoResize(textarea);
     });
-  }
-  
-  if (mainVideo && fullscreenBtn) {
-    fullscreenBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      if (mainVideo.requestFullscreen) {
-        mainVideo.requestFullscreen();
-      } else if (mainVideo.webkitRequestFullscreen) {
-        mainVideo.webkitRequestFullscreen();
-      } else if (mainVideo.msRequestFullscreen) {
-        mainVideo.msRequestFullscreen();
-      }
-    });
-  }
-  
-  // Auto-resize all textareas
-  const textareas = document.querySelectorAll('textarea');
-  textareas.forEach(textarea => {
-    textarea.addEventListener('input', function() {
-      autoResize(this);
-    });
-    // Initial resize
-    autoResize(textarea);
-  });
 }
 
 function initializeAnimations() {
-  // Enhanced intersection observer for animations
-  const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '50px'
-  };
-  
-  const observer = new IntersectionObserver(function(entries) {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.style.opacity = '1';
-        entry.target.style.transform = 'translateY(0) scale(1)';
-        
-        // Add sequential animation for media cards
-        if (entry.target.classList.contains('media-card')) {
-          const delay = Array.from(entry.target.parentNode.children).indexOf(entry.target) * 100;
-          entry.target.style.animationDelay = `${delay}ms`;
-        }
-      }
+    // Enhanced intersection observer for animations
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '50px'
+    };
+    
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0) scale(1)';
+                
+                // Add sequential animation for media cards
+                if (entry.target.classList.contains('media-card')) {
+                    const delay = Array.from(entry.target.parentNode.children).indexOf(entry.target) * 100;
+                    entry.target.style.animationDelay = `${delay}ms`;
+                }
+            }
+        });
+    }, observerOptions);
+    
+    // Observe all animated elements
+    document.querySelectorAll('.animate-fade-in, .animate-slide-up, .animate-scale-in, .media-card').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(30px) scale(0.95)';
+        el.style.transition = 'opacity 0.8s ease, transform 0.8s ease, box-shadow 0.3s ease';
+        observer.observe(el);
     });
-  }, observerOptions);
-  
-  // Observe all animated elements
-  document.querySelectorAll('.animate-fade-in, .animate-slide-up, .animate-scale-in, .media-card').forEach(el => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(30px) scale(0.95)';
-    el.style.transition = 'opacity 0.8s ease, transform 0.8s ease, box-shadow 0.3s ease';
-    observer.observe(el);
-  });
-  
-  // Hide floating actions on scroll with enhanced behavior
-  let lastScrollTop = 0;
-  const floatingActions = document.querySelector('.floating-actions');
-  const scrollThreshold = 100;
-  
-  if (floatingActions) {
-    window.addEventListener('scroll', function() {
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const scrollDelta = scrollTop - lastScrollTop;
-      
-      if (Math.abs(scrollDelta) > 5) { // Only trigger on significant scroll
-        if (scrollTop > lastScrollTop && scrollTop > scrollThreshold) {
-          // Scrolling down
-          floatingActions.style.transform = 'translateY(120px)';
-          floatingActions.style.opacity = '0';
-        } else {
-          // Scrolling up
-          floatingActions.style.transform = 'translateY(0)';
-          floatingActions.style.opacity = '1';
-        }
-      }
-      
-      lastScrollTop = scrollTop;
-    }, { passive: true });
-  }
+    
+    // Hide floating actions on scroll with enhanced behavior
+    let lastScrollTop = 0;
+    const floatingActions = document.querySelector('.floating-actions');
+    const scrollThreshold = 100;
+    
+    if (floatingActions) {
+        window.addEventListener('scroll', function() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollDelta = scrollTop - lastScrollTop;
+            
+            if (Math.abs(scrollDelta) > 5) { // Only trigger on significant scroll
+                if (scrollTop > lastScrollTop && scrollTop > scrollThreshold) {
+                    // Scrolling down
+                    floatingActions.style.transform = 'translateY(120px)';
+                    floatingActions.style.opacity = '0';
+                } else {
+                    // Scrolling up
+                    floatingActions.style.transform = 'translateY(0)';
+                    floatingActions.style.opacity = '1';
+                }
+            }
+            
+            lastScrollTop = scrollTop;
+        }, { passive: true });
+    }
 }
 
 // Touch gesture support for mobile
@@ -1911,108 +1942,28 @@ let touchStartX = 0;
 let touchEndX = 0;
 
 document.addEventListener('touchstart', e => {
-  touchStartX = e.changedTouches[0].screenX;
+    touchStartX = e.changedTouches[0].screenX;
 });
 
 document.addEventListener('touchend', e => {
-  touchEndX = e.changedTouches[0].screenX;
-  handleSwipe();
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
 });
 
 function handleSwipe() {
-  const lightbox = document.getElementById('lightbox');
-  if (!lightbox.classList.contains('active')) return;
-  
-  const swipeThreshold = 50;
-  const swipeDistance = touchEndX - touchStartX;
-  
-  if (Math.abs(swipeDistance) > swipeThreshold) {
-    if (swipeDistance > 0) {
-      navigateLightbox(-1); // Swipe right - previous
-    } else {
-      navigateLightbox(1); // Swipe left - next
+    const lightbox = document.getElementById('lightbox');
+    if (!lightbox.classList.contains('active')) return;
+    
+    const swipeThreshold = 50;
+    const swipeDistance = touchEndX - touchStartX;
+    
+    if (Math.abs(swipeDistance) > swipeThreshold) {
+        if (swipeDistance > 0) {
+            navigateLightbox(-1); // Swipe right - previous
+        } else {
+            navigateLightbox(1); // Swipe left - next
+        }
     }
-  }
 }
-
-// Enhanced Social Sharing with Image Support
-function shareOnPlatform(platform) {
-  const url = encodeURIComponent(window.location.href);
-  const title = encodeURIComponent('{{ $article->title }}');
-  const description = encodeURIComponent('{{ Str::limit(strip_tags($article->content), 150) }}');
-  const image = '{{ $shareImage ? urlencode($shareImage) : "" }}';
-  const hasVideo = {{ $hasVideo ? 'true' : 'false' }};
-  
-  let shareUrl = '';
-  
-  switch(platform) {
-    case 'whatsapp':
-      shareUrl = `https://wa.me/?text=${encodeURIComponent(`📢 *${'{{ $article->title }}'}*
-
-${'{{ Str::limit(strip_tags($article->content), 200) }}'}
-
-${hasVideo ? '🎥 Vidéo incluse - ' : '📷 '}🔗 ${window.location.href}
-
-📱 Partagé via FlashPost`)}`;
-      break;
-      
-    case 'facebook':
-      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${title}`;
-      break;
-      
-    case 'twitter':
-      shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${encodeURIComponent(`${title} ${hasVideo ? '🎥' : '📷'} via @FlashPost`)}`;
-      break;
-      
-    case 'telegram':
-      shareUrl = `https://t.me/share/url?url=${url}&text=${title}`;
-      break;
-      
-    case 'linkedin':
-      shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
-      break;
-  }
-  
-  if (shareUrl) {
-    window.open(shareUrl, '_blank', 'width=600,height=500,menubar=no,toolbar=no,resizable=yes,scrollbars=yes');
-  }
-}
-
-// Enhanced Web Share API for native sharing
-function shareNative() {
-  if (navigator.share) {
-    navigator.share({
-      title: '{{ $article->title }}',
-      text: '{{ Str::limit(strip_tags($article->content), 150) }}',
-      url: window.location.href,
-    })
-    .then(() => console.log('Successful share'))
-    .catch((error) => console.log('Error sharing:', error));
-  } else {
-    openShareModal();
-  }
-}
-
-// Update the share floating button to use native sharing when available
-document.addEventListener('DOMContentLoaded', function() {
-  const shareFloatingBtn = document.querySelector('.share-floating-btn');
-  if (navigator.share && shareFloatingBtn) {
-    shareFloatingBtn.onclick = shareNative;
-  }
-});
 </script>
-
-<!-- Open Graph Meta Tags for Social Media Sharing -->
-<meta property="og:title" content="{{ $article->title }}">
-<meta property="og:description" content="{{ Str::limit(strip_tags($article->content), 150) }}">
-<meta property="og:image" content="{{ $shareImage ? url($shareImage) : asset('img/default-share-image.jpg') }}">
-<meta property="og:url" content="{{ request()->fullUrl() }}">
-<meta property="og:type" content="article">
-<meta property="og:site_name" content="FlashPost">
-
-<!-- Twitter Card Meta Tags -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{{ $article->title }}">
-<meta name="twitter:description" content="{{ Str::limit(strip_tags($article->content), 150) }}">
-<meta name="twitter:image" content="{{ $shareImage ? url($shareImage) : asset('img/default-share-image.jpg') }}">
 @endsection
