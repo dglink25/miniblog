@@ -11,11 +11,89 @@ class Article extends Model{
     use HasFactory;
 
     protected $fillable = [
-    'user_id','title','slug','content','image_path','status','rejection_reason','published_at'
+    'user_id',
+    'title',
+    'slug',
+    'content',
+    'image_path',
+    'status',
+    'rejection_reason',
+    'published_at',
+    'pinned',
+    'views_count',
+    'comments_count',
+    'likes_count',
     ];
+
+    protected $casts = [
+        'published_at' => 'datetime',
+        'pinned' => 'boolean',
+    ];
+
+    // Relations
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function media()
+    {
+        return $this->hasMany(Media::class);
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function reactions()
+    {
+        return $this->morphMany(Reaction::class, 'reactable');
+    }
+
+    // Scopes
+
+    public function scopePinned($query){
+        return $query->where('pinned', true);
+    }
+
+    // Méthodes utilitaires
+    public function incrementViews()
+    {
+        $this->increment('views_count');
+    }
+
+    public function getCommentsCountAttribute()
+    {
+        return $this->comments()->count();
+    }
+
+    public function getLikesCountAttribute()
+    {
+        return $this->reactions()->where('type', 'like')->count();
+    }
+
+    public function hasVideo()
+    {
+        return $this->media()->where('type', 'video')->exists();
+    }
+
+    public function getVideo()
+    {
+        return $this->media()->where('type', 'video')->first();
+    }
+
+    public function getImage()
+    {
+        return $this->media()->where('type', 'image')->first();
+    }
 
     public function ratings() { return $this->hasMany(\App\Models\ArticleRating::class); }
 
+    public function rating()
+    {
+        return $this->hasMany(Rating::class);
+    }
 
     // Scopes utiles
     public function scopePublished($q) { return $q->where('status','validated'); }
@@ -26,8 +104,6 @@ class Article extends Model{
     public function averageStars(): float { return (float) ($this->ratings()->avg('stars') ?? 0); }
 
     // Relations
-    public function user() { return $this->belongsTo(User::class); }
-    public function comments() { return $this->hasMany(Comment::class)->latest(); }
 
     // Utiliser le slug dans les URLs
     public function getRouteKeyName(): string { return 'slug'; }
@@ -55,10 +131,7 @@ class Article extends Model{
         }
         return $slug;
     }
-    public function media()
-    {
-        return $this->hasMany(Media::class);
-    }
+
 
     //public function scopePublished($q) { return $q->where('is_published', true); }
 
@@ -66,9 +139,6 @@ class Article extends Model{
         return $this->is_published ? 'Publié' : 'En attente';
     }
 
-    public function reactions(){
-        return $this->hasMany(ArticleReaction::class);
-    }
 
 
 

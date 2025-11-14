@@ -7,53 +7,72 @@
 
 @section('content')
 <div class="container-fluid px-2 px-md-3 px-lg-4 py-3">
-  {{-- Floating Create Button (Mobile First) --}}
-  @auth
-    @php
-        $user = auth()->user();
-        $canPublish = false;
+  {{-- Floating Action Buttons --}}
+  <div class="floating-actions">
+    {{-- Create Button --}}
+    @auth
+      @php
+          $user = auth()->user();
+          $canPublish = false;
 
-        if ($user->activeSubscription()) {
-            $canPublish = true;
-        } elseif ($user->trial_ends_at && now()->lessThanOrEqualTo($user->trial_ends_at)) {
-            $canPublish = true;
-        }
-    @endphp
+          if ($user->activeSubscription()) {
+              $canPublish = true;
+          } elseif ($user->trial_ends_at && now()->lessThanOrEqualTo($user->trial_ends_at)) {
+              $canPublish = true;
+          }
+      @endphp
 
-    @if($canPublish)
-      <div class="floating-create-btn">
-        <a class="btn btn-primary btn-lg shadow-lg hover-scale" href="{{ route('articles.create') }}">
+      @if($canPublish)
+        <div class="floating-btn-group">
+          <a class="btn btn-primary btn-lg shadow-lg hover-scale create-btn" href="{{ route('articles.create') }}">
+            <i class="bi bi-plus-lg"></i>
+            <span class="btn-text">Créer</span>
+          </a>
+          <span class="btn-tooltip">Publier du contenu</span>
+        </div>
+      @endif
+    @else
+      <div class="floating-btn-group">
+        <a class="btn btn-primary btn-lg shadow-lg hover-scale create-btn" href="{{ route('login') }}">
           <i class="bi bi-plus-lg"></i>
           <span class="btn-text">Créer</span>
         </a>
+        <span class="btn-tooltip">Connectez-vous pour créer</span>
       </div>
-    @endif
-  @else
-    <div class="floating-create-btn">
-      <a class="btn btn-primary btn-lg shadow-lg hover-scale" href="{{ route('login') }}">
-        <i class="bi bi-plus-lg"></i>
-        <span class="btn-text">Créer</span>
-      </a>
-    </div>
-  @endauth
+    @endauth
 
-  {{-- Header Section --}}
+    {{-- Suggestion Button --}}
+    <div class="floating-btn-group">
+      <button class="btn btn-accent btn-lg shadow-lg hover-scale suggestion-btn" data-bs-toggle="modal" data-bs-target="#suggestionModal">
+        <i class="bi bi-lightbulb"></i>
+        <span class="btn-text">Suggestion</span>
+      </button>
+      <span class="btn-tooltip">Partager une idée</span>
+    </div>
+
+    {{-- Scroll to Top --}}
+    <button class="btn btn-secondary btn-lg shadow-lg hover-scale scroll-top-btn" onclick="scrollToTop()">
+      <i class="bi bi-arrow-up"></i>
+    </button>
+  </div>
+
+  {{-- Hero Section --}}
   <div class="hero-section mb-5 animate-fade-in">
     <div class="row align-items-center">
       <div class="col-12 col-lg-8">
         <h1 class="display-5 fw-bold text-gradient mb-3">
-          Découvrez <span class="text-accent">FlashPost</span>
+          Bienvenue sur <span class="text-accent">FlashPost</span>
         </h1>
         <p class="lead text-muted mb-4">
-          La plateforme de divertissement et de partage qui vous connecte à votre audience. 
-          Partagez vos idées, découvrez du contenu passionnant et interagissez avec la communauté.
+          Découvrez, partagez et interagissez avec du contenu passionnant. 
+          La plateforme qui donne vie à vos idées et connecte votre audience.
         </p>
         <div class="d-flex flex-wrap gap-3">
-          <a href="#featured-content" class="btn btn-primary btn-lg hover-lift">
+          <a href="#articles-grid" class="btn btn-primary btn-lg hover-lift">
             <i class="bi bi-play-circle me-2"></i>Explorer
           </a>
           <a href="{{ route('articles.create') }}" class="btn btn-outline-primary btn-lg hover-lift">
-            <i class="bi bi-lightning me-2"></i>Démarrer gratuitement
+            <i class="bi bi-lightning me-2"></i>Commencer
           </a>
         </div>
       </div>
@@ -62,7 +81,7 @@
           <div class="card-body p-4">
             <div class="row text-center">
               <div class="col-4">
-                <div class="stat-number h3 fw-bold">{{ $articles->total() }}+</div>
+                <div class="stat-number h3 fw-bold">{{ \App\Models\Article::where('status', 'validated')->count() }}+</div>
                 <div class="stat-label small">Publications</div>
               </div>
               <div class="col-4">
@@ -84,15 +103,14 @@
   <div class="search-section mb-5">
     <div class="card search-card border-0 shadow-lg animate-slide-up">
       <div class="card-body p-4">
-        <form method="GET" action="{{ route('articles.index') }}">
+        <form method="GET" action="{{ route('articles.index') }}" id="searchForm">
           <div class="row g-3 align-items-end">
             <div class="col-12 col-md-8 col-lg-9">
               <div class="form-floating">
                 <input type="text" name="q" value="{{ $q ?? '' }}" 
                        class="form-control form-control-lg border-0 shadow-sm" 
                        id="searchInput"
-                       placeholder="Rechercher une publication, un auteur..."
-                       oninput="filterCards(this.value)">
+                       placeholder="Rechercher une publication, un auteur...">
                 <label for="searchInput">
                   <i class="bi bi-search me-2"></i>Rechercher une publication, un auteur...
                 </label>
@@ -108,13 +126,6 @@
       </div>
     </div>
   </div>
-
-  {{-- Featured Videos Section --}}
-  @php
-    $featuredVideos = $articles->filter(function($article) {
-        return $article->status === 'validated' && $article->media->where('type', 'video')->count() > 0;
-    })->take(3);
-  @endphp
 
   {{-- Pinned Announcements --}}
   @foreach(($annonces ?? []) as $a)
@@ -199,9 +210,9 @@
   @endforeach
 
   {{-- Articles Grid Header --}}
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-4" id="articles-grid">
     <h2 class="h3 fw-bold text-gradient">
-      <i class="bi bi-newspaper me-2"></i>Toutes les publications
+      <i class="bi bi-newspaper me-2"></i>Publications récentes
     </h2>
     <div class="d-flex gap-2">
       <div class="dropdown">
@@ -243,184 +254,71 @@
   @endif
 
   {{-- Articles Grid --}}
-  <div class="row g-4" id="articles-grid">
+  <div class="row g-4" id="articles-container">
     @foreach($articles as $article)
-      @if($article->status === 'validated')
-      <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-        <div class="card article-card h-100 border-0 shadow-lg hover-scale">
-          {{-- Article Media --}}
-          <div class="card-media position-relative overflow-hidden">
-            @php
-              $hasVideo = $article->media->where('type', 'video')->count() > 0;
-              $thumb = $article->media->firstWhere('type','image') ?? null;
-            @endphp
-            
-            @if ($hasVideo)
-              {{-- Video Thumbnail --}}
-              @php
-                $video = $article->media->where('type', 'video')->first();
-              @endphp
-              <div class="video-thumbnail position-relative">
-                <img src="{{ $article->image_path ?? asset('img/video-placeholder.jpg') }}" 
-                     class="article-image"
-                     alt="Vidéo {{ $article->title }}"
-                     loading="lazy">
-                <div class="video-play-overlay">
-                  <div class="play-icon">
-                    <i class="bi bi-play-fill"></i>
-                  </div>
-                </div>
-                <div class="video-duration-badge">
-                  <span class="badge bg-dark bg-opacity-75 text-white">
-                    <i class="bi bi-play-circle me-1"></i>Vidéo
-                  </span>
-                </div>
-              </div>
-            @elseif ($article->image_path)
-              {{-- Image --}}
-              <a href="{{ route('articles.show', $article) }}" class="article-image-link">
-                <div class="image-container">
-                  <img src="{{ $article->image_path }}" 
-                      class="article-image" 
-                      alt="Image article {{ $article->title }}"
-                      loading="lazy">
-                </div>
-              </a>
-            @else
-              {{-- Placeholder --}}
-              <div class="article-image-placeholder">
-                <div class="placeholder-content">
-                  <i class="bi bi-image text-muted"></i>
-                  <span class="placeholder-text">Aucune image</span>
-                </div>
-              </div>
-            @endif
-            
-            {{-- Status Badge --}}
-            <div class="position-absolute top-0 end-0 m-3">
-              <span class="badge bg-success bg-opacity-90 text-white shadow-sm">
-                <i class="bi bi-check-circle-fill me-1"></i>Publié
-              </span>
-            </div>
-          </div>
-
-          <div class="card-body d-flex flex-column p-4">
-            {{-- Title --}}
-            <h5 class="card-title fw-bold line-clamp-2 mb-2">
-              <a href="{{ route('articles.show', $article) }}" class="text-decoration-none text-dark hover-accent">
-                {{ $article->title }}
-              </a>
-            </h5>
-            
-            {{-- Excerpt --}}
-            <p class="card-text flex-grow-1 text-muted line-clamp-3 mb-3">
-              {{ Str::limit(strip_tags($article->content), 120) }}
-            </p>
-
-            {{-- Author and Date --}}
-            <div class="d-flex align-items-center mb-3">
-              <div class="avatar-sm me-3">
-                <div class="avatar-placeholder bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold">
-                  {{ Str::substr($article->user->name, 0, 1) }}
-                </div>
-              </div>
-              <div class="flex-grow-1">
-                <div class="small fw-medium">
-                  <a href="{{ route('user.article', $article->user->id) }}" class="text-decoration-none text-dark hover-primary">
-                    {{ $article->user->name }}
-                  </a>
-                </div>
-                <div class="small text-muted">
-                  <i class="bi bi-clock me-1"></i>
-                  {{ optional($article->published_at ?? $article->created_at)->diffForHumans() }}
-                  @if($article->updated_at->gt($article->created_at))
-                    <span class="ms-2" title="Modifié {{ $article->updated_at->diffForHumans() }}">
-                      <i class="bi bi-pencil-square"></i>
-                    </span>
-                  @endif
-                </div>
-              </div>
-            </div>
-
-            {{-- Stats --}}
-            <div class="article-stats d-flex justify-content-between text-muted small mb-3">
-              <div class="d-flex align-items-center">
-                <i class="bi bi-eye me-1"></i>
-                <span>{{ $article->views_count ?? 0 }}</span>
-              </div>
-              <div class="d-flex align-items-center">
-                <i class="bi bi-chat me-1"></i>
-                <span>{{ $article->comments_count ?? 0 }}</span>
-              </div>
-              <div class="d-flex align-items-center">
-                <i class="bi bi-heart me-1"></i>
-                <span>{{ $article->likes_count ?? 0 }}</span>
-              </div>
-            </div>
-
-            {{-- Action Button --}}
-            <a href="{{ route('articles.show', $article) }}" class="btn btn-outline-primary w-100 mt-auto hover-lift">
-              <i class="bi bi-eye me-2"></i>Voir les détails
-            </a>
-          </div>
-        </div>
-      </div>
-      @endif
+      @include('articles.article_card', ['article' => $article])
     @endforeach
   </div>
 
-  {{-- Pagination --}}
-  @if ($articles->hasPages())
-    <div class="pagination-section mt-5">
-      <nav aria-label="Pagination des articles">
-        <ul class="pagination justify-content-center">
-          {{-- Previous Page Link --}}
-          @if ($articles->onFirstPage())
-            <li class="page-item disabled">
-              <span class="page-link">
-                <i class="bi bi-chevron-left me-1"></i> Précédent
-              </span>
-            </li>
-          @else
-            <li class="page-item">
-              <a class="page-link hover-lift" href="{{ $articles->previousPageUrl() }}">
-                <i class="bi bi-chevron-left me-1"></i> Précédent
-              </a>
-            </li>
-          @endif
-
-          {{-- Pagination Elements --}}
-          @foreach ($articles->links()->elements[0] ?? [] as $page => $url)
-            @if ($page == $articles->currentPage())
-              <li class="page-item active">
-                <span class="page-link">{{ $page }}</span>
-              </li>
-            @else
-              <li class="page-item">
-                <a class="page-link hover-lift" href="{{ $url }}">{{ $page }}</a>
-              </li>
-            @endif
-          @endforeach
-
-          {{-- Next Page Link --}}
-          @if ($articles->hasMorePages())
-            <li class="page-item">
-              <a class="page-link hover-lift" href="{{ $articles->nextPageUrl() }}">
-                Suivant <i class="bi bi-chevron-right ms-1"></i>
-              </a>
-            </li>
-          @else
-            <li class="page-item disabled">
-              <span class="page-link">
-                Suivant <i class="bi bi-chevron-right ms-1"></i>
-              </span>
-            </li>
-          @endif
-        </ul>
-      </nav>
+  {{-- Loading Spinner --}}
+  <div id="loading-spinner" class="text-center py-5 d-none">
+    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+      <span class="visually-hidden">Chargement...</span>
     </div>
-  @endif
+    <p class="text-muted mt-3">Chargement des publications...</p>
+  </div>
 
+  {{-- End of Content Message --}}
+  <div id="end-of-content" class="text-center py-5 d-none">
+    <div class="end-content-icon mb-3">
+      <i class="bi bi-check-circle display-4 text-success"></i>
+    </div>
+    <h4 class="text-muted">Vous avez tout vu !</h4>
+    <p class="text-muted">Découvrez plus de contenu en créant votre propre publication.</p>
+    <a href="{{ route('articles.create') }}" class="btn btn-primary hover-lift">
+      <i class="bi bi-plus-circle me-2"></i>Créer une publication
+    </a>
+  </div>
+
+</div>
+
+{{-- Suggestion Modal --}}
+<div class="modal fade" id="suggestionModal" tabindex="-1" aria-labelledby="suggestionModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-gradient-primary text-white">
+        <h5 class="modal-title" id="suggestionModalLabel">
+          <i class="bi bi-lightbulb me-2"></i>Partager une suggestion
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <form id="suggestionForm" action="{{ route('suggestions.store') }}" method="POST">
+          @csrf
+          <div class="mb-4">
+            <label for="suggestionTitle" class="form-label fw-bold">Titre de la suggestion</label>
+            <input type="text" class="form-control form-control-lg" id="suggestionTitle" name="subject" 
+                   placeholder="Ex: Amélioration de l'interface mobile" required>
+          </div>
+          <div class="mb-4">
+            <label for="suggestionContent" class="form-label fw-bold">Description détaillée</label>
+            <textarea class="form-control" id="suggestionContent" name="message" rows="5" 
+                      placeholder="Décrivez votre idée en détail..." required></textarea>
+          </div>
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            Votre suggestion sera examinée par notre équipe. Merci pour votre contribution !
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="submit" form="suggestionForm" class="btn btn-primary">
+          <i class="bi bi-send me-2"></i>Envoyer la suggestion
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <style>
@@ -459,15 +357,25 @@
   background-color: var(--accent-color) !important;
 }
 
-/* ===== FLOATING CREATE BUTTON ===== */
-.floating-create-btn {
+/* ===== FLOATING ACTIONS ===== */
+.floating-actions {
   position: fixed;
   bottom: 2rem;
   right: 2rem;
   z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.floating-create-btn .btn {
+.floating-btn-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.floating-actions .btn {
   border-radius: 50px;
   padding: 1rem 1.5rem;
   box-shadow: var(--shadow-lg);
@@ -475,12 +383,52 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  animation: float 3s ease-in-out infinite;
+  transition: var(--transition);
+  position: relative;
+  z-index: 2;
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+.create-btn {
+  animation: pulse 2s ease-in-out infinite;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  border: none;
+}
+
+.suggestion-btn {
+  background: linear-gradient(135deg, var(--accent-color), var(--accent-light));
+  border: none;
+}
+
+.btn-tooltip {
+  position: absolute;
+  top: -40px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: var(--transition);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.floating-btn-group:hover .btn-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes pulse {
+  0%, 100% { 
+    transform: scale(1) translateY(0);
+    box-shadow: var(--shadow-lg);
+  }
+  50% { 
+    transform: scale(1.05) translateY(-5px);
+    box-shadow: 0 20px 50px rgba(67, 97, 238, 0.4);
+  }
 }
 
 /* ===== HERO SECTION ===== */
@@ -516,70 +464,16 @@
   padding: 1rem 1.5rem;
 }
 
-/* ===== FEATURED VIDEOS ===== */
-.video-feature-card {
-  border-radius: 15px;
-  overflow: hidden;
-  transition: var(--transition);
-}
-
-.video-wrapper {
-  position: relative;
-  width: 100%;
-  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
-  background: #000;
-}
-
-.featured-video {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 0;
-}
-
-.video-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 1;
-  transition: opacity 0.3s ease;
-}
-
-.video-wrapper:hover .video-overlay {
-  opacity: 0;
-}
-
-.play-button {
-  width: 80px;
-  height: 80px;
-  background: rgba(255, 123, 0, 0.9);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 2rem;
-  transition: var(--transition);
-}
-
-.video-wrapper:hover .play-button {
-  transform: scale(1.1);
-}
-
 /* ===== ARTICLE CARDS ===== */
 .article-card {
   border-radius: 15px;
   overflow: hidden;
   transition: var(--transition);
+  animation: slideUp 0.6s ease-out;
+}
+
+.article-card.animate-in {
+  animation: slideInUp 0.6s ease-out;
 }
 
 .hover-scale {
@@ -609,6 +503,8 @@
 .card-media {
   height: 220px;
   background: #f8f9fa;
+  position: relative;
+  overflow: hidden;
 }
 
 .image-container {
@@ -626,6 +522,53 @@
 
 .article-card:hover .article-image {
   transform: scale(1.05);
+}
+
+/* Video Styles */
+.video-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+.auto-play-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.video-container.playing .video-overlay {
+  opacity: 0;
+}
+
+.play-indicator {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .video-thumbnail {
@@ -727,6 +670,9 @@
   font-size: 0.875rem;
   width: 100%;
   height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ===== ANIMATIONS ===== */
@@ -758,6 +704,17 @@
   }
 }
 
+@keyframes slideInUp {
+  from { 
+    opacity: 0;
+    transform: translateY(50px) scale(0.9);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @keyframes scaleIn {
   from { 
     opacity: 0;
@@ -769,27 +726,25 @@
   }
 }
 
-/* ===== PAGINATION ===== */
-.pagination .page-link {
-  border: none;
-  border-radius: 10px;
-  margin: 0 4px;
-  color: var(--primary-color);
-  font-weight: 500;
-  padding: 0.75rem 1rem;
-  transition: var(--transition);
+/* ===== LOADING SPINNER ===== */
+.spinner-border {
+  animation: spinner-border 0.75s linear infinite;
 }
 
-.pagination .page-item.active .page-link {
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  border: none;
-  box-shadow: var(--shadow-sm);
+.end-content-icon {
+  animation: bounce 2s infinite;
 }
 
-.pagination .page-link:hover {
-  background-color: rgba(67, 97, 238, 0.1);
-  color: var(--secondary-color);
-  transform: translateY(-2px);
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
 }
 
 /* ===== RESPONSIVE DESIGN ===== */
@@ -805,17 +760,17 @@
     margin-top: 0.5rem;
   }
   
-  .floating-create-btn {
+  .floating-actions {
     bottom: 1.5rem;
     right: 1.5rem;
   }
   
-  .floating-create-btn .btn {
+  .floating-actions .btn {
     padding: 0.875rem 1.25rem;
     font-size: 0.9rem;
   }
   
-  .floating-create-btn .btn-text {
+  .floating-actions .btn-text {
     display: none;
   }
   
@@ -827,14 +782,10 @@
     font-size: 1.5rem;
   }
   
-  .video-feature-card {
-    margin-bottom: 1.5rem;
-  }
-  
-  .play-button {
-    width: 60px;
-    height: 60px;
-    font-size: 1.5rem;
+  .play-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
   }
 }
 
@@ -851,31 +802,31 @@
     font-size: 0.8rem;
   }
   
-  .pagination .page-link {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-  }
-  
   .search-card .card-body {
     padding: 1.5rem;
   }
-}
 
-@media (max-width: 400px) {
-  .floating-create-btn {
+  .floating-actions {
     bottom: 1rem;
     right: 1rem;
   }
   
-  .floating-create-btn .btn {
+  .floating-actions .btn {
     width: 50px;
     height: 50px;
     padding: 0;
     justify-content: center;
   }
-  
+}
+
+@media (max-width: 400px) {
   .hero-section {
     padding: 1.5rem 1rem;
+  }
+
+  .floating-actions {
+    bottom: 0.5rem;
+    right: 0.5rem;
   }
 }
 
@@ -886,18 +837,6 @@
 
 .empty-icon {
   animation: bounce 2s infinite;
-}
-
-@keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {
-    transform: translateY(0);
-  }
-  40% {
-    transform: translateY(-10px);
-  }
-  60% {
-    transform: translateY(-5px);
-  }
 }
 
 /* ===== ANNOUNCEMENT CARDS ===== */
@@ -939,71 +878,291 @@
 ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, var(--secondary-color), var(--accent-light));
 }
+
+/* ===== SUGGESTION MODAL ===== */
+.modal-content {
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.modal-header {
+  border-bottom: none;
+  padding: 1.5rem 1.5rem 0;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-footer {
+  border-top: none;
+  padding: 0 1.5rem 1.5rem;
+}
 </style>
 
 <script>
-// Filter cards based on search input
-function filterCards(q) {
-  const cards = document.querySelectorAll('.article-card');
-  const term = q.toLowerCase().trim();
-  const grid = document.getElementById('articles-grid');
-  
-  let visibleCount = 0;
-  
-  cards.forEach(card => {
-    const cardText = card.innerText.toLowerCase();
-    const parentCol = card.closest('.col-12, .col-sm-6, .col-lg-4, .col-xl-3');
-    
-    if (term === '' || cardText.includes(term)) {
-      parentCol.style.display = '';
-      card.style.opacity = '1';
-      card.style.transform = 'scale(1)';
-      visibleCount++;
-    } else {
-      parentCol.style.display = 'none';
-      card.style.opacity = '0.5';
-      card.style.transform = 'scale(0.95)';
-    }
-  });
+// Infinite Scroll Variables
+let isLoading = false;
+let hasMore = true;
+let offset = {{ $articles->count() }};
+const loadThreshold = 300; // pixels from bottom to trigger load
 
-  // Show empty state if no results
-  const emptyState = document.querySelector('.empty-state');
-  if (emptyState) {
-    emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+// Video Observers
+const videoObservers = new Map();
+
+// Initialize everything when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+  initializeInfiniteScroll();
+  initializeVideoAutoplay();
+  initializeAnimations();
+  initializeFloatingButtons();
+  initializeSearch();
+});
+
+// ===== INFINITE SCROLL =====
+function initializeInfiniteScroll() {
+  window.addEventListener('scroll', throttle(handleScroll, 200));
+}
+
+function handleScroll() {
+  if (isLoading || !hasMore) return;
+
+  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+  const windowHeight = window.innerHeight;
+  const documentHeight = document.documentElement.scrollHeight;
+
+  if (scrollTop + windowHeight >= documentHeight - loadThreshold) {
+    loadMoreArticles();
   }
 }
 
-// Video play functionality
-document.addEventListener('DOMContentLoaded', function() {
-  // Initialize video players
-  const videos = document.querySelectorAll('.featured-video');
-  videos.forEach(video => {
-    video.addEventListener('click', function() {
-      if (this.paused) {
-        this.play();
-        this.parentElement.querySelector('.video-overlay').style.opacity = '0';
-      } else {
-        this.pause();
-        this.parentElement.querySelector('.video-overlay').style.opacity = '1';
-      }
-    });
-  });
+async function loadMoreArticles() {
+  if (isLoading) return;
   
-  // Video thumbnail click handlers
-  const videoThumbnails = document.querySelectorAll('.video-thumbnail');
-  videoThumbnails.forEach(thumbnail => {
-    thumbnail.addEventListener('click', function() {
-      const articleUrl = this.closest('.article-card').querySelector('.card-title a').href;
-      window.location.href = articleUrl;
-    });
-  });
+  isLoading = true;
+  const loadingSpinner = document.getElementById('loading-spinner');
+  const articlesContainer = document.getElementById('articles-container');
   
-  // Intersection Observer for animations
+  // Show loading spinner
+  loadingSpinner.classList.remove('d-none');
+  
+  try {
+    const response = await fetch(`/articles/load-more?offset=${offset}`);
+    const data = await response.json();
+    
+    if (data.articles.length > 0) {
+      // Add new articles with animation
+      data.articles.forEach(article => {
+        const articleHtml = generateArticleCard(article);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = articleHtml;
+        const articleElement = tempDiv.firstElementChild;
+        
+        articlesContainer.appendChild(articleElement);
+        
+        // Animate the new article
+        setTimeout(() => {
+          articleElement.classList.add('animate-in');
+          initializeVideoForArticle(articleElement, article);
+        }, 100);
+      });
+      
+      offset += data.articles.length;
+      hasMore = data.hasMore;
+    } else {
+      hasMore = false;
+      showEndOfContent();
+    }
+  } catch (error) {
+    console.error('Error loading more articles:', error);
+    showError('Erreur lors du chargement des publications');
+  } finally {
+    isLoading = false;
+    loadingSpinner.classList.add('d-none');
+  }
+}
+
+function generateArticleCard(article) {
+  const hasVideo = article.media && article.media.some(media => media.type === 'video');
+  const video = hasVideo ? article.media.find(media => media.type === 'video') : null;
+  const imageUrl = article.image_path || (article.media && article.media.find(media => media.type === 'image')?.file_path);
+  
+  return `
+    <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+      <div class="card article-card h-100 border-0 shadow-lg hover-scale" data-article-id="${article.id}">
+        <div class="card-media position-relative overflow-hidden">
+          ${hasVideo ? `
+            <div class="video-container" data-video-src="${video.file_path}">
+              <video class="auto-play-video" muted playsinline preload="metadata" poster="${imageUrl || '/img/video-placeholder.jpg'}">
+                <source src="${video.file_path}" type="video/mp4">
+                Votre navigateur ne supporte pas la lecture vidéo.
+              </video>
+              <div class="video-overlay">
+                <div class="play-icon">
+                  <i class="bi bi-play-fill"></i>
+                </div>
+              </div>
+              <div class="play-indicator">
+                <i class="bi bi-play-circle me-1"></i>Vidéo
+              </div>
+            </div>
+          ` : imageUrl ? `
+            <a href="/articles/${article.id}" class="article-image-link">
+              <div class="image-container">
+                <img src="${imageUrl}" 
+                    class="article-image" 
+                    alt="Image article ${article.title}"
+                    loading="lazy">
+              </div>
+            </a>
+          ` : `
+            <div class="article-image-placeholder">
+              <div class="placeholder-content">
+                <i class="bi bi-image text-muted"></i>
+                <span class="placeholder-text">Aucune image</span>
+              </div>
+            </div>
+          `}
+          
+          <div class="position-absolute top-0 end-0 m-3">
+            <span class="badge bg-success bg-opacity-90 text-white shadow-sm">
+              <i class="bi bi-check-circle-fill me-1"></i>Publié
+            </span>
+          </div>
+        </div>
+
+        <div class="card-body d-flex flex-column p-4">
+          <h5 class="card-title fw-bold line-clamp-2 mb-2">
+            <a href="/articles/${article.id}" class="text-decoration-none text-dark hover-accent">
+              ${article.title}
+            </a>
+          </h5>
+          
+          <p class="card-text flex-grow-1 text-muted line-clamp-3 mb-3">
+            ${article.content ? article.content.substring(0, 120) + (article.content.length > 120 ? '...' : '') : ''}
+          </p>
+
+          <div class="d-flex align-items-center mb-3">
+            <div class="avatar-sm me-3">
+              <div class="avatar-placeholder bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold">
+                ${article.user.name ? article.user.name.substring(0, 1).toUpperCase() : 'U'}
+              </div>
+            </div>
+            <div class="flex-grow-1">
+              <div class="small fw-medium">
+                <a href="/user/${article.user.id}/articles" class="text-decoration-none text-dark hover-primary">
+                  ${article.user.name}
+                </a>
+              </div>
+              <div class="small text-muted">
+                <i class="bi bi-clock me-1"></i>
+                ${new Date(article.published_at || article.created_at).toLocaleDateString('fr-FR', { 
+                  day: 'numeric', 
+                  month: 'short',
+                  year: 'numeric'
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div class="article-stats d-flex justify-content-between text-muted small mb-3">
+            <div class="d-flex align-items-center">
+              <i class="bi bi-eye me-1"></i>
+              <span>${article.views_count || 0}</span>
+            </div>
+            <div class="d-flex align-items-center">
+              <i class="bi bi-chat me-1"></i>
+              <span>${article.comments_count || 0}</span>
+            </div>
+            <div class="d-flex align-items-center">
+              <i class="bi bi-heart me-1"></i>
+              <span>${article.likes_count || 0}</span>
+            </div>
+          </div>
+
+          <a href="/articles/${article.id}" class="btn btn-outline-primary w-100 mt-auto hover-lift">
+            <i class="bi bi-eye me-2"></i>Voir les détails
+          </a>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function showEndOfContent() {
+  const endOfContent = document.getElementById('end-of-content');
+  endOfContent.classList.remove('d-none');
+}
+
+function showError(message) {
+  // Create and show error toast
+  const toast = document.createElement('div');
+  toast.className = 'alert alert-danger position-fixed top-0 end-0 m-3';
+  toast.style.zIndex = '1060';
+  toast.innerHTML = `
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    ${message}
+  `;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.remove();
+  }, 5000);
+}
+
+// ===== VIDEO AUTOPLAY =====
+function initializeVideoAutoplay() {
+  // Initialize for existing articles
+  document.querySelectorAll('.video-container').forEach(container => {
+    initializeVideoObserver(container);
+  });
+}
+
+function initializeVideoForArticle(articleElement, article) {
+  const videoContainer = articleElement.querySelector('.video-container');
+  if (videoContainer) {
+    initializeVideoObserver(videoContainer);
+  }
+}
+
+function initializeVideoObserver(videoContainer) {
+  const video = videoContainer.querySelector('video');
+  if (!video) return;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          // Video is in viewport
+          videoContainer.classList.add('playing');
+          video.play().catch(e => {
+            console.log('Autoplay prevented:', e);
+            videoContainer.classList.remove('playing');
+          });
+        } else {
+          // Video is out of viewport
+          video.pause();
+          videoContainer.classList.remove('playing');
+        }
+      });
+    },
+    {
+      threshold: 0.5, // 50% of video must be visible
+      rootMargin: '0px 0px -100px 0px' // Stop playing when 100px from bottom
+    }
+  );
+
+  observer.observe(videoContainer);
+  videoObservers.set(videoContainer, observer);
+}
+
+// ===== ANIMATIONS =====
+function initializeAnimations() {
   const observerOptions = {
     threshold: 0.1,
     rootMargin: '50px'
   };
-  
+
   const observer = new IntersectionObserver(function(entries) {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
@@ -1012,82 +1171,120 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   }, observerOptions);
-  
-  // Observe all animated elements
+
   document.querySelectorAll('.animate-fade-in, .animate-slide-up, .animate-scale-in, .article-card').forEach(el => {
     el.style.opacity = '0';
     el.style.transform = 'translateY(20px) scale(0.95)';
     el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
     observer.observe(el);
   });
-  
-  // Search input focus effect
-  const searchInput = document.getElementById('searchInput');
-  if (searchInput) {
-    searchInput.addEventListener('focus', function() {
-      this.parentElement.classList.add('focused');
-    });
-    
-    searchInput.addEventListener('blur', function() {
-      this.parentElement.classList.remove('focused');
-    });
-  }
-  
-  // Auto-hide floating button on scroll
+}
+
+// ===== FLOATING BUTTONS =====
+function initializeFloatingButtons() {
   let lastScrollTop = 0;
-  const floatingBtn = document.querySelector('.floating-create-btn');
+  const floatingActions = document.querySelector('.floating-actions');
   
-  if (floatingBtn) {
-    window.addEventListener('scroll', function() {
+  if (floatingActions) {
+    window.addEventListener('scroll', throttle(function() {
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       
       if (scrollTop > lastScrollTop && scrollTop > 100) {
         // Scrolling down
-        floatingBtn.style.transform = 'translateY(100px)';
-        floatingBtn.style.opacity = '0';
+        floatingActions.style.transform = 'translateY(100px)';
+        floatingActions.style.opacity = '0';
       } else {
         // Scrolling up
-        floatingBtn.style.transform = 'translateY(0)';
-        floatingBtn.style.opacity = '1';
+        floatingActions.style.transform = 'translateY(0)';
+        floatingActions.style.opacity = '1';
       }
       
       lastScrollTop = scrollTop;
-    }, { passive: true });
+    }, 100));
+  }
+}
+
+// ===== SEARCH FUNCTIONALITY =====
+function initializeSearch() {
+  const searchForm = document.getElementById('searchForm');
+  const searchInput = document.getElementById('searchInput');
+  
+  if (searchInput) {
+    searchInput.addEventListener('input', throttle(function() {
+      // You can add real-time search here if needed
+    }, 300));
+  }
+}
+
+// ===== UTILITY FUNCTIONS =====
+function throttle(func, limit) {
+  let inThrottle;
+  return function() {
+    const args = arguments;
+    const context = this;
+    if (!inThrottle) {
+      func.apply(context, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  }
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Suggestion form handling
+document.addEventListener('DOMContentLoaded', function() {
+  const suggestionForm = document.getElementById('suggestionForm');
+  if (suggestionForm) {
+    suggestionForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(this);
+      
+      fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Show success message
+          const modal = bootstrap.Modal.getInstance(document.getElementById('suggestionModal'));
+          modal.hide();
+          
+          showSuccess('Votre suggestion a été envoyée avec succès !');
+          this.reset();
+        } else {
+          showError('Erreur lors de l\'envoi de la suggestion');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showError('Erreur lors de l\'envoi de la suggestion');
+      });
+    });
   }
 });
 
-// Social sharing with video support
-function shareArticle(articleId, hasVideo = false, videoUrl = null, imageUrl = null, title = '', description = '') {
-  const url = encodeURIComponent(window.location.href);
-  const text = encodeURIComponent(title);
-  const desc = encodeURIComponent(description);
+function showSuccess(message) {
+  const toast = document.createElement('div');
+  toast.className = 'alert alert-success position-fixed top-0 end-0 m-3';
+  toast.style.zIndex = '1060';
+  toast.innerHTML = `
+    <i class="bi bi-check-circle me-2"></i>
+    ${message}
+  `;
+  document.body.appendChild(toast);
   
-  if (hasVideo && videoUrl) {
-    // Special handling for video content
-    if (navigator.share) {
-      navigator.share({
-        title: title,
-        text: description,
-        url: window.location.href,
-      })
-      .catch(console.error);
-    } else {
-      // Fallback to WhatsApp with video mention
-      window.open(`https://wa.me/?text=${text}%0A%0A🎥 ${videoUrl}%0A%0A${url}`, '_blank');
-    }
-  } else {
-    // Standard sharing for non-video content
-    if (navigator.share) {
-      navigator.share({
-        title: title,
-        text: description,
-        url: window.location.href,
-      })
-      .catch(console.error);
-    } else {
-      window.open(`https://wa.me/?text=${text}%0A%0A${url}`, '_blank');
-    }
-  }
+  setTimeout(() => {
+    toast.remove();
+  }, 5000);
 }
 </script>
 @endsection

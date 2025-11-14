@@ -36,6 +36,8 @@ Route::get('/googleb4554f24cec51de9.html', function () {
 });
 
 
+// Chargement infini des articles
+Route::get('/articles/load-more', [ArticleController::class, 'loadMore'])->name('articles.load-more');
 
 
 Route::get('/admin/settings/edit', [SettingController::class, 'edit'])->name('admin.settings.edit');

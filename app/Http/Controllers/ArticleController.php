@@ -24,32 +24,30 @@ class ArticleController extends Controller{
     }
 
     public function index(Request $request){
-        $file = $request->file('image');
-        if ($file) {
-            $filename = time().'_'.$file->getClientOriginalName();
-
-            // Copier dans storage persistant
-            $file->storeAs('media', $filename);
-
-            // Copier dans public pour affichage immédiat
-            copy(storage_path('app/media/'.$filename), public_path('uploads/'.$filename));
-
-            // Sauvegarder le nom dans la base
-            $article->image = $filename;
-        }
-
         $q = $request->string('q')->toString();
 
-        $articles = Article::with('user')
+        // Récupérer les articles avec leurs relations et counts
+        $articles = Article::with(['user', 'media', 'comments', 'reactions'])
+            ->withCount(['comments', 'reactions as likes_count' => function($query) {
+                $query->where('type', 'like');
+            }])
             ->when($q, fn($query) => $query->where(function($sub) use ($q) {
                 $sub->where('title', 'like', "%{$q}%")
-                    ->orWhere('content', 'like', "%{$q}%");
+                    ->orWhere('content', 'like', "%{$q}%")
+                    ->orWhereHas('user', function($userQuery) use ($q) {
+                        $userQuery->where('name', 'like', "%{$q}%");
+                    });
             }))
             ->where('status', 'validated')
-            ->orderByDesc('pinned')      // 🔹 les articles épinglés en premier
-            ->latest('published_at')     // puis par date de publication
-            ->paginate(5)
-            ->withQueryString();
+            ->orderByDesc('pinned')
+            ->latest('published_at')
+            ->take(12) // Chargement initial
+            ->get();
+
+        // Incrémenter le compteur de vues pour les articles
+        foreach ($articles as $article) {
+            $article->increment('views_count');
+        }
 
         $annonces = Announcement::published()
             ->when(auth()->check(), function($q) {
@@ -59,12 +57,47 @@ class ArticleController extends Controller{
                         ->where('user_id', auth()->id());
                 });
             })
-            ->orderByDesc('is_pinned') // épinglés en tête
+            ->orderByDesc('is_pinned')
             ->orderByDesc('published_at')
-            ->take(3) // limite si tu veux
+            ->take(3)
             ->get();
 
+        // Si c'est une requête AJAX pour le chargement infini
+        if ($request->ajax()) {
+            return response()->json([
+                'articles' => $articles,
+                'hasMore' => Article::where('status', 'validated')->count() > $articles->count()
+            ]);
+        }
+
         return view('articles.index', compact('articles','q','annonces'));
+    }
+
+    // Nouvelle méthode pour le chargement infini
+    public function loadMore(Request $request){
+        $offset = $request->get('offset', 0);
+        $limit = 8; // Nombre d'articles à charger à chaque fois
+
+        $articles = Article::with(['user', 'media', 'comments', 'reactions'])
+            ->withCount(['comments', 'reactions as likes_count' => function($query) {
+                $query->where('type', 'like');
+            }])
+            ->where('status', 'validated')
+            ->orderByDesc('pinned')
+            ->latest('published_at')
+            ->skip($offset)
+            ->take($limit)
+            ->get();
+
+        // Incrémenter les vues
+        foreach ($articles as $article) {
+            $article->increment('views_count');
+        }
+
+        return response()->json([
+            'articles' => $articles,
+            'hasMore' => Article::where('status', 'validated')->count() > ($offset + $limit)
+        ]);
     }
 
     public function create(){
