@@ -312,8 +312,6 @@ class ArticleController extends Controller{
             ->with('success', "L'article et tous ses fichiers Cloudinary ont été supprimés.");
     }
 
-
-
     public function mine(){
         $userId = auth()->id();
         $pending = \App\Models\Article::with('user','media')->where('user_id',$userId)->pending()->latest()->get();

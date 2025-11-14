@@ -139,6 +139,7 @@
                 $mainImage = $article->image_path;
                 $hasVideo = $mainVideo ? true : false;
                 $hasImage = $mainImage ? true : false;
+                $shareImage = $mainImage ?: ($article->media->where('type', 'image')->first()->file_path ?? null);
             @endphp
 
             @if($mainVideo)
@@ -340,10 +341,7 @@
                                 $title = urlencode($article->title);
                                 $content = $article->content ? Str::limit(strip_tags($article->content), 150) : '';
                                 $description = urlencode($content);
-                                $image = '';
-                                if ($article->image_path) {
-                                    $image = urlencode($article->image_path);
-                                }
+                                $image = $shareImage ? urlencode($shareImage) : '';
                                 
                                 $video = null;
                                 if ($article->media) {
@@ -447,8 +445,8 @@
                             {{-- Share Preview --}}
                             <div class="share-preview mt-4 p-3 bg-light rounded-3">
                                 <div class="d-flex align-items-center">
-                                    @if($article->image_path)
-                                        <img src="{{ $article->image_path }}" 
+                                    @if($shareImage)
+                                        <img src="{{ $shareImage }}" 
                                              class="share-preview-image rounded-2 me-3"
                                              alt="Preview"
                                              style="width: 60px; height: 60px; object-fit: cover;">
@@ -1936,5 +1934,85 @@ function handleSwipe() {
     }
   }
 }
+
+// Enhanced Social Sharing with Image Support
+function shareOnPlatform(platform) {
+  const url = encodeURIComponent(window.location.href);
+  const title = encodeURIComponent('{{ $article->title }}');
+  const description = encodeURIComponent('{{ Str::limit(strip_tags($article->content), 150) }}');
+  const image = '{{ $shareImage ? urlencode($shareImage) : "" }}';
+  const hasVideo = {{ $hasVideo ? 'true' : 'false' }};
+  
+  let shareUrl = '';
+  
+  switch(platform) {
+    case 'whatsapp':
+      shareUrl = `https://wa.me/?text=${encodeURIComponent(`📢 *${'{{ $article->title }}'}*
+
+${'{{ Str::limit(strip_tags($article->content), 200) }}'}
+
+${hasVideo ? '🎥 Vidéo incluse - ' : '📷 '}🔗 ${window.location.href}
+
+📱 Partagé via FlashPost`)}`;
+      break;
+      
+    case 'facebook':
+      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${title}`;
+      break;
+      
+    case 'twitter':
+      shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${encodeURIComponent(`${title} ${hasVideo ? '🎥' : '📷'} via @FlashPost`)}`;
+      break;
+      
+    case 'telegram':
+      shareUrl = `https://t.me/share/url?url=${url}&text=${title}`;
+      break;
+      
+    case 'linkedin':
+      shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
+      break;
+  }
+  
+  if (shareUrl) {
+    window.open(shareUrl, '_blank', 'width=600,height=500,menubar=no,toolbar=no,resizable=yes,scrollbars=yes');
+  }
+}
+
+// Enhanced Web Share API for native sharing
+function shareNative() {
+  if (navigator.share) {
+    navigator.share({
+      title: '{{ $article->title }}',
+      text: '{{ Str::limit(strip_tags($article->content), 150) }}',
+      url: window.location.href,
+    })
+    .then(() => console.log('Successful share'))
+    .catch((error) => console.log('Error sharing:', error));
+  } else {
+    openShareModal();
+  }
+}
+
+// Update the share floating button to use native sharing when available
+document.addEventListener('DOMContentLoaded', function() {
+  const shareFloatingBtn = document.querySelector('.share-floating-btn');
+  if (navigator.share && shareFloatingBtn) {
+    shareFloatingBtn.onclick = shareNative;
+  }
+});
 </script>
+
+<!-- Open Graph Meta Tags for Social Media Sharing -->
+<meta property="og:title" content="{{ $article->title }}">
+<meta property="og:description" content="{{ Str::limit(strip_tags($article->content), 150) }}">
+<meta property="og:image" content="{{ $shareImage ? url($shareImage) : asset('img/default-share-image.jpg') }}">
+<meta property="og:url" content="{{ request()->fullUrl() }}">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="FlashPost">
+
+<!-- Twitter Card Meta Tags -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ $article->title }}">
+<meta name="twitter:description" content="{{ Str::limit(strip_tags($article->content), 150) }}">
+<meta name="twitter:image" content="{{ $shareImage ? url($shareImage) : asset('img/default-share-image.jpg') }}">
 @endsection
