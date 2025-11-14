@@ -301,7 +301,11 @@
           </div>
           <div class="mb-3">
             <label class="form-label">Message</label>
-            <textarea class="form-control" name="message" rows="6" required>{{ old('message') }}</textarea>
+            <textarea class="form-control" name="message" placeholder="Décrivez votre idée en détail..." rows="6" required>{{ old('message') }}</textarea>
+          </div>
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            Votre suggestion sera examinée par notre équipe. Merci pour votre contribution !
           </div>
           <button type="submit" class="btn btn-primary">Envoyer</button>
         </form>

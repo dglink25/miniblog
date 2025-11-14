@@ -755,7 +755,7 @@
   <div class="container">
     <a class="navbar-brand fw-bold" href="{{ route('articles.index') }}">
       <img src="{{ asset('flashpost.png') }}" alt="FlashPost Logo">
-      <span class="text-primary">Flash</span><span class="text-accent">Post</span></span>
+      <span style="color: #3b82f6">Flash</span><span style="color: #f97316">Post</span>
     </a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"

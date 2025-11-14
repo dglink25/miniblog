@@ -220,9 +220,9 @@ Route::prefix('admin')->middleware(['auth'])->name('admin.')->group(function() {
 // -----------------------------
 // SUGGESTIONS
 // -----------------------------
-Route::middleware('auth')->group(function () {
-    Route::resource('suggestions', SuggestionController::class)->only(['create','store']);
-});
+// Route accessible sans authentification
+Route::resource('suggestions', SuggestionController::class)->only(['create','store']);
+
 Route::prefix('admin')->middleware('auth')->group(function () {
     Route::get('/suggestions', [SuggestionAdminController::class,'index'])->name('admin.suggestions.index');
     Route::get('/suggestions/{suggestion}', [SuggestionAdminController::class,'show'])->name('admin.suggestions.show');
