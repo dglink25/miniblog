@@ -1,32 +1,57 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid px-2 px-md-3 px-lg-5 py-3">
+<div class="container-fluid px-2 px-md-3 px-lg-4 py-3">
     <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8">
+            {{-- Floating Action Buttons --}}
+            <div class="floating-actions">
+                @auth
+                    @include('articles.partials.favorite_button', ['article' => $article])
+                @endauth
+                
+                <button class="btn btn-primary btn-lg shadow-lg hover-scale share-floating-btn" 
+                        onclick="openShareModal()">
+                    <i class="bi bi-share-fill"></i>
+                </button>
+                
+                <button class="btn btn-accent btn-lg shadow-lg hover-scale scroll-top-btn" 
+                        onclick="scrollToTop()">
+                    <i class="bi bi-arrow-up"></i>
+                </button>
+            </div>
+
             {{-- Article Header --}}
-            <div class="article-header mb-4 animate-fade-in">
-                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3">
+            <div class="article-header mb-5 animate-fade-in">
+                <nav aria-label="breadcrumb" class="mb-4">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ route('articles.index') }}" class="text-decoration-none hover-primary">Accueil</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('user.article', $article->user->id) }}" class="text-decoration-none hover-primary">{{ $article->user->name }}</a></li>
+                        <li class="breadcrumb-item active text-accent" aria-current="page">Publication</li>
+                    </ol>
+                </nav>
+
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
                     <div class="flex-grow-1">
-                        <h1 class="article-title fw-bold text-dark mb-2">{{ $article->title }}</h1>
+                        <h1 class="article-title fw-bold text-dark mb-3">{{ $article->title }}</h1>
                         
                         {{-- Author Info --}}
                         <div class="d-flex align-items-center flex-wrap gap-3">
                             <div class="d-flex align-items-center">
-                                <div class="avatar-sm me-2">
+                                <div class="avatar-lg me-3">
                                     <div class="avatar-placeholder bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" 
-                                         style="width: 40px; height: 40px;">
+                                         style="width: 60px; height: 60px;">
                                         {{ Str::substr($article->user->name, 0, 1) }}
                                     </div>
                                 </div>
                                 <div>
-                                    <div class="fw-medium">
+                                    <div class="fw-bold h5 mb-1">
                                         <a href="{{ route('user.article', $article->user->id) }}" 
                                            class="text-decoration-none text-dark hover-primary">
                                             {{ $article->user->name }}
                                         </a>
                                     </div>
-                                    <div class="small text-muted">
+                                    <div class="text-muted">
                                         <i class="bi bi-clock me-1"></i>
                                         {{ $article->created_at->diffForHumans() }}
                                         @if($article->updated_at->gt($article->created_at))
@@ -41,21 +66,19 @@
                             {{-- User Actions --}}
                             <div class="d-flex align-items-center gap-2">
                                 @auth
-                                    @include('articles.partials.favorite_button', ['article' => $article])
-                                    
                                     @if(auth()->id() !== $article->user->id)
                                         @if(auth()->user()->following?->contains($article->user->id))
                                             <form method="POST" action="{{ route('users.unfollow', $article->user) }}" class="m-0">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button class="btn btn-outline-warning btn-sm hover-lift">
+                                                <button class="btn btn-outline-warning hover-lift">
                                                     <i class="bi bi-person-dash me-1"></i>Se désabonner
                                                 </button>
                                             </form>
                                         @else
                                             <form method="POST" action="{{ route('users.follow', $article->user) }}" class="m-0">
                                                 @csrf
-                                                <button class="btn btn-primary btn-sm hover-lift">
+                                                <button class="btn btn-primary hover-lift">
                                                     <i class="bi bi-person-plus me-1"></i>S'abonner
                                                 </button>
                                             </form>
@@ -74,24 +97,81 @@
                                   class="m-0">
                                 @csrf
                                 @method('DELETE')
-                                <button class="btn btn-outline-danger btn-sm hover-lift">
+                                <button class="btn btn-outline-danger hover-lift">
                                     <i class="bi bi-trash me-1"></i>Supprimer
                                 </button>
                             </form>
                         @endif
                     @endauth
                 </div>
+
+                {{-- Article Stats --}}
+                <div class="article-stats d-flex flex-wrap gap-4 mb-4">
+                    <div class="stat-item d-flex align-items-center">
+                        <i class="bi bi-eye-fill text-primary me-2"></i>
+                        <span class="fw-bold">{{ $article->views_count ?? 0 }}</span>
+                        <span class="text-muted ms-1">vues</span>
+                    </div>
+                    <div class="stat-item d-flex align-items-center">
+                        <i class="bi bi-chat-fill text-primary me-2"></i>
+                        <span class="fw-bold">{{ $article->comments->count() }}</span>
+                        <span class="text-muted ms-1">commentaires</span>
+                    </div>
+                    <div class="stat-item d-flex align-items-center">
+                        <i class="bi bi-heart-fill text-danger me-2"></i>
+                        <span class="fw-bold">{{ $article->reactions()->where('type','like')->count() }}</span>
+                        <span class="text-muted ms-1">réactions</span>
+                    </div>
+                    @php
+                        $avgRating = $article->ratings()->avg('stars') ?? 0;
+                    @endphp
+                    <div class="stat-item d-flex align-items-center">
+                        <i class="bi bi-star-fill text-warning me-2"></i>
+                        <span class="fw-bold">{{ number_format($avgRating, 1) }}</span>
+                        <span class="text-muted ms-1">/5 ({{ $article->ratings()->count() }})</span>
+                    </div>
+                </div>
             </div>
 
-            {{-- Main Article Image --}}
-            @if($article->image_path)
-                <div class="main-image-container mb-4 rounded-3 overflow-hidden shadow-lg animate-slide-up">
+            {{-- Main Article Media --}}
+            @php
+                $mainVideo = $article->media->where('type', 'video')->first();
+                $mainImage = $article->image_path;
+            @endphp
+
+            @if($mainVideo)
+                {{-- Video Player --}}
+                <div class="main-media-container mb-5 rounded-4 overflow-hidden shadow-lg animate-slide-up">
+                    <div class="video-player-container">
+                        <video class="main-video-player" 
+                               controls 
+                               playsinline
+                               poster="{{ $mainImage ?? asset('img/video-placeholder.jpg') }}"
+                               preload="metadata">
+                            <source src="{{ $mainVideo->file_path }}" type="video/mp4">
+                            Votre navigateur ne supporte pas la lecture vidéo.
+                        </video>
+                        <div class="video-controls-overlay">
+                            <div class="control-buttons">
+                                <button class="btn btn-primary btn-lg control-btn play-pause-btn">
+                                    <i class="bi bi-play-fill"></i>
+                                </button>
+                                <button class="btn btn-primary btn-lg control-btn fullscreen-btn">
+                                    <i class="bi bi-arrows-fullscreen"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @elseif($mainImage)
+                {{-- Main Image --}}
+                <div class="main-media-container mb-5 rounded-4 overflow-hidden shadow-lg animate-slide-up">
                     <div class="image-ratio-container">
-                        <img src="{{ $article->image_path }}" 
+                        <img src="{{ $mainImage }}" 
                              class="article-main-image cursor-zoom" 
                              alt="Image article {{ $article->title }}"
                              loading="eager"
-                             onclick="openLightbox('{{ $article->image_path }}', '{{ $article->title }}')">
+                             onclick="openLightbox('{{ $mainImage }}', '{{ $article->title }}')">
                     </div>
                 </div>
             @endif
@@ -104,12 +184,14 @@
 
                 {{-- Media Gallery --}}
                 @if($article->media->count() > 0)
-                    <div class="media-gallery mb-4">
-                        <center><h3 class="h5 mb-3 text-muted">Médias associés</h3></center>
-                        <div class="row g-2 g-sm-3">
+                    <div class="media-gallery mb-5">
+                        <h3 class="h4 mb-4 text-gradient text-center">
+                            <i class="bi bi-images me-2"></i>Médias associés
+                        </h3>
+                        <div class="row g-3">
                             @foreach ($article->media as $m)
                                 <div class="col-6 col-sm-4 col-lg-3">
-                                    <div class="media-card rounded-3 overflow-hidden shadow-sm border-0 animate-scale-in">
+                                    <div class="media-card rounded-3 overflow-hidden shadow-sm border-0 animate-scale-in hover-scale">
                                         @if ($m->isImage())
                                             <div class="image-ratio-container">
                                                 <img src="{{ $m->file_path }}"
@@ -119,21 +201,33 @@
                                                      loading="lazy">
                                             </div>
                                         @elseif ($m->isVideo())
-                                            <video src="{{ $m->file_path }}" controls style="max-height:120px; width:100%;"></video>
-                                            
+                                            <div class="video-thumbnail-container">
+                                                <div class="image-ratio-container">
+                                                    <img src="{{ $article->image_path ?? asset('img/video-placeholder.jpg') }}"
+                                                         class="media-item cursor-pointer"
+                                                         alt="Vidéo de l'article"
+                                                         onclick="playVideo('{{ $m->file_path }}')"
+                                                         loading="lazy">
+                                                    <div class="video-play-overlay">
+                                                        <div class="play-icon-sm">
+                                                            <i class="bi bi-play-fill"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         @elseif ($m->isAudio())
-                                            <div class="audio-container p-2 p-sm-3 bg-light d-flex align-items-center">
+                                            <div class="audio-container p-3 bg-light d-flex align-items-center rounded-3">
                                                 <audio controls class="w-100">
-                                                    <source src="{{ asset('storage/'.$m->file_path) }}" type="{{ $m->mime_type }}">
+                                                    <source src="{{ $m->file_path }}" type="{{ $m->mime_type }}">
                                                     Votre navigateur ne supporte pas la lecture audio.
                                                 </audio>
                                             </div>
                                         @else
-                                            <div class="file-container p-2 p-sm-3 bg-light d-flex align-items-center justify-content-center">
-                                                <a href="{{ asset('storage/'.$m->file_path) }}" 
+                                            <div class="file-container p-3 bg-light d-flex align-items-center justify-content-center rounded-3">
+                                                <a href="{{ $m->file_path }}" 
                                                    target="_blank" 
-                                                   class="btn btn-outline-primary btn-sm hover-lift">
-                                                    <i class="bi bi-download me-1 me-sm-2"></i>Télécharger
+                                                   class="btn btn-outline-primary hover-lift w-100">
+                                                    <i class="bi bi-download me-2"></i>Télécharger
                                                 </a>
                                             </div>
                                         @endif
@@ -147,7 +241,7 @@
 
             {{-- Action Buttons --}}
             <div class="action-buttons mb-5">
-                <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
                     {{-- Left Side Actions --}}
                     <div class="d-flex flex-wrap gap-2">
                         @can('update', $article)
@@ -180,7 +274,8 @@
                                 @csrf
                                 <button name="type" value="like" 
                                         class="btn btn-outline-primary hover-lift reaction-btn">
-                                    ❤️ {{ $article->reactions()->where('type','like')->count() }}
+                                    <i class="bi bi-heart me-2"></i>
+                                    {{ $article->reactions()->where('type','like')->count() }}
                                 </button>
                             </form>
                         @endauth
@@ -202,108 +297,132 @@
                 </div>
             </div>
 
-            {{-- Share Section --}}
-            <div class="share-section mb-5">
-                <h3 class="h5 mb-3 text-muted">Partager cette publication</h3>
-                <div class="d-flex flex-wrap gap-2">
-                    @php
-                        $url = urlencode(request()->fullUrl());
-                        $title = urlencode($article->title);
-                        $image = $article->image_path ? urlencode($article->image_path) : '';
-                        $description = urlencode(Str::limit(strip_tags($article->content), 150));
-                    @endphp
-                    
-                    {{-- Facebook --}}
-                    <a class="btn btn-sm text-white hover-lift share-btn" style="background:#1877F2" target="_blank"
-                    href="https://www.facebook.com/sharer/sharer.php?u={{ $url }}&picture={{ $image }}&title={{ $title }}&description={{ $description }}">
-                    <i class="fab fa-facebook-f me-2"></i>Facebook
-                    </a>
-
-                    {{-- X (Twitter) --}}
-                    <a class="btn btn-sm text-white hover-lift share-btn" style="background:#000000" target="_blank"
-                    href="https://twitter.com/intent/tweet?url={{ $url }}&text={{ $title }}&hashtags=E-SOURCE">
-                    <i class="fab fa-x-twitter me-2"></i>X
-                    </a>
-
-                    {{-- WhatsApp avec image --}}
-                    @if($article->image_path)
-                        <a class="btn btn-sm text-white hover-lift share-btn" style="background:#25D366" target="_blank"
-                        href="https://wa.me/?text={{ $title }}%0A%0A{{ $url }}%0A%0A🖼️ {{ $article->image_path }}">
-                        <i class="fab fa-whatsapp me-2"></i>WhatsApp
-                        </a>
-                    @else
-                        <a class="btn btn-sm text-white hover-lift share-btn" style="background:#25D366" target="_blank"
-                        href="https://wa.me/?text={{ $title }}%0A%0A{{ $url }}">
-                        <i class="fab fa-whatsapp me-2"></i>WhatsApp
-                        </a>
-                    @endif
-
-                    {{-- Telegram --}}
-                    <a class="btn btn-sm text-white hover-lift share-btn" style="background:#0088cc" target="_blank"
-                    href="https://t.me/share/url?url={{ $url }}&text={{ $title }}">
-                    <i class="fab fa-telegram me-2"></i>Telegram
-                    </a>
-
-                    {{-- LinkedIn --}}
-                    <a class="btn btn-sm text-white hover-lift share-btn" style="background:#0A66C2" target="_blank"
-                    href="https://www.linkedin.com/sharing/share-offsite/?url={{ $url }}">
-                    <i class="fab fa-linkedin-in me-2"></i>LinkedIn
-                    </a>
-
-                    {{-- Pinterest --}}
-                    @if($article->image_path)
-                        <a class="btn btn-sm text-white hover-lift share-btn" style="background:#BD081C" target="_blank"
-                        href="https://pinterest.com/pin/create/button/?url={{ $url }}&media={{ $image }}&description={{ $title }}">
-                        <i class="fab fa-pinterest me-2"></i>Pinterest
-                        </a>
-                    @endif
-
-                    {{-- Email --}}
-                    <a class="btn btn-sm text-white hover-lift share-btn" style="background:#EA4335" target="_blank"
-                    href="mailto:?subject={{ $title }}&body=Découvrez cette publication : {{ $url }}">
-                    <i class="fas fa-envelope me-2"></i>Email
-                    </a>
-
-                    {{-- Copy Link --}}
-                    <button class="btn btn-sm text-white hover-lift share-btn copy-link-btn" style="background:#6c757d">
-                        <i class="fas fa-copy me-2"></i>Copier le lien
-                    </button>
+            {{-- Share Modal --}}
+            <div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg">
+                        <div class="modal-header bg-gradient-primary text-white">
+                            <h5 class="modal-title" id="shareModalLabel">
+                                <i class="bi bi-share-fill me-2"></i>Partager cette publication
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-4">
+                            @php
+                                $url = urlencode(request()->fullUrl());
+                                $title = urlencode($article->title);
+                                $image = $article->image_path ? urlencode($article->image_path) : '';
+                                $description = urlencode(Str::limit(strip_tags($article->content), 150));
+                                $video = $article->media->where('type', 'video')->first();
+                                $hasVideo = $video ? true : false;
+                                $videoUrl = $video ? urlencode($video->file_path) : '';
+                            @endphp
+                            
+                            <div class="row g-3">
+                                <div class="col-6 col-sm-4">
+                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" style="background:#1877F2" 
+                                       href="https://www.facebook.com/sharer/sharer.php?u={{ $url }}&picture={{ $image }}&title={{ $title }}&description={{ $description }}"
+                                       target="_blank">
+                                        <i class="fab fa-facebook-f fa-lg"></i>
+                                        <span class="d-block mt-1 small">Facebook</span>
+                                    </a>
+                                </div>
+                                
+                                <div class="col-6 col-sm-4">
+                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" style="background:#000000" 
+                                       href="https://twitter.com/intent/tweet?url={{ $url }}&text={{ $title }}&hashtags=FlashPost"
+                                       target="_blank">
+                                        <i class="fab fa-x-twitter fa-lg"></i>
+                                        <span class="d-block mt-1 small">Twitter</span>
+                                    </a>
+                                </div>
+                                
+                                <div class="col-6 col-sm-4">
+                                    @if($hasVideo)
+                                        <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" style="background:#25D366" 
+                                           href="https://wa.me/?text={{ $title }}%0A%0A🎥 Vidéo disponible : {{ $url }}"
+                                           target="_blank">
+                                            <i class="fab fa-whatsapp fa-lg"></i>
+                                            <span class="d-block mt-1 small">WhatsApp</span>
+                                        </a>
+                                    @else
+                                        <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" style="background:#25D366" 
+                                           href="https://wa.me/?text={{ $title }}%0A%0A{{ $url }}"
+                                           target="_blank">
+                                            <i class="fab fa-whatsapp fa-lg"></i>
+                                            <span class="d-block mt-1 small">WhatsApp</span>
+                                        </a>
+                                    @endif
+                                </div>
+                                
+                                <div class="col-6 col-sm-4">
+                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" style="background:#0088cc" 
+                                       href="https://t.me/share/url?url={{ $url }}&text={{ $title }}"
+                                       target="_blank">
+                                        <i class="fab fa-telegram fa-lg"></i>
+                                        <span class="d-block mt-1 small">Telegram</span>
+                                    </a>
+                                </div>
+                                
+                                <div class="col-6 col-sm-4">
+                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" style="background:#0A66C2" 
+                                       href="https://www.linkedin.com/sharing/share-offsite/?url={{ $url }}"
+                                       target="_blank">
+                                        <i class="fab fa-linkedin-in fa-lg"></i>
+                                        <span class="d-block mt-1 small">LinkedIn</span>
+                                    </a>
+                                </div>
+                                
+                                <div class="col-6 col-sm-4">
+                                    <button class="share-platform-btn btn btn-lg w-100 text-white hover-lift copy-link-btn" style="background:#6c757d">
+                                        <i class="fas fa-copy fa-lg"></i>
+                                        <span class="d-block mt-1 small">Copier le lien</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             {{-- Rating Section --}}
             @auth
-                <div class="rating-section mb-5 p-3 p-sm-4 bg-light rounded-3 animate-fade-in">
-                    @php $my = $article->ratings()->where('user_id',auth()->id())->first(); @endphp
-                    <h3 class="h5 mb-3">Noter cette publication</h3>
+                <div class="rating-section mb-5 p-4 bg-light rounded-4 animate-fade-in">
+                    @php $myRating = $article->ratings()->where('user_id',auth()->id())->first(); @endphp
+                    <h3 class="h4 mb-3 text-gradient">
+                        <i class="bi bi-star-fill me-2"></i>Noter cette publication
+                    </h3>
                     <form action="{{ route('articles.rate',$article) }}" method="POST" class="d-inline-block">
                         @csrf
-                        @if(!$my)
-                            <div class="d-flex align-items-center flex-wrap gap-2 gap-sm-3">
-                                <span class="fw-medium">Votre note :</span>
+                        @if(!$myRating)
+                            <div class="d-flex align-items-center flex-wrap gap-3">
+                                <span class="fw-bold">Votre note :</span>
                                 <div class="star-rating">
                                     @for($i=1;$i<=5;$i++)
                                         <button name="stars" value="{{ $i }}" 
                                                 class="btn btn-lg p-1 star-btn" 
-                                                type="submit">
+                                                type="submit"
+                                                onmouseenter="highlightStars({{ $i }})"
+                                                onmouseleave="resetStars()">
                                             <i class="bi bi-star"></i>
                                         </button>
                                     @endfor
                                 </div>
                             </div>
                         @else
-                            <div class="d-flex align-items-center gap-2 gap-sm-3">
-                                <span class="fw-medium">Votre note :</span>
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="fw-bold">Votre note :</span>
                                 <div class="user-rating">
-                                    @for($i=1;$i<=$my->stars;$i++)
-                                        <i class="bi bi-star-fill text-warning"></i>
+                                    @for($i=1;$i<=$myRating->stars;$i++)
+                                        <i class="bi bi-star-fill text-warning fs-4"></i>
                                     @endfor
-                                    <span class="ms-2">{{ $my->stars }}/5</span>
+                                    <span class="ms-2 fw-bold fs-5">{{ $myRating->stars }}/5</span>
                                 </div>
                             </div>
                         @endif
                     </form>
-                    <div class="mt-2 text-muted">
+                    <div class="mt-3 text-muted">
+                        <i class="bi bi-graph-up me-1"></i>
                         Moyenne : <strong>{{ number_format($article->ratings()->avg('stars'),2) }}</strong> / 5 
                         ({{ $article->ratings()->count() }} avis)
                     </div>
@@ -311,87 +430,99 @@
             @endauth
 
             {{-- Comments Section --}}
-            <section class="comments-section">
+            <section class="comments-section mb-5">
                 <div class="d-flex align-items-center justify-content-between mb-4">
-                    <h2 class="h4 mb-0">
-                        <i class="bi bi-chat-text me-2"></i>
-                        Commentaires ({{ $article->comments->count() }})
+                    <h2 class="h3 text-gradient mb-0">
+                        <i class="bi bi-chat-text-fill me-2"></i>
+                        Commentaires <span class="badge bg-primary rounded-pill">{{ $article->comments->count() }}</span>
                     </h2>
+                    <button class="btn btn-outline-primary hover-lift" onclick="scrollToComments()">
+                        <i class="bi bi-chat-square-quote me-1"></i>Commenter
+                    </button>
                 </div>
 
                 {{-- Add Comment Form --}}
                 @auth
-                    <div class="comment-form-card card border-0 shadow-sm mb-4 animate-slide-up">
-                        <div class="card-body p-3 p-sm-4">
-                            <form action="{{ route('articles.comments.store', $article) }}" method="POST">
+                    <div class="comment-form-card card border-0 shadow-lg mb-4 animate-slide-up">
+                        <div class="card-body p-4">
+                            <form action="{{ route('articles.comments.store', $article) }}" method="POST" id="commentForm">
                                 @csrf
                                 <div class="mb-3">
-                                    <label class="form-label fw-medium">Ajouter un commentaire</label>
+                                    <label class="form-label fw-bold fs-5">Ajouter un commentaire</label>
                                     <textarea name="body" rows="4" 
-                                              class="form-control focus-shadow" 
+                                              class="form-control form-control-lg focus-shadow" 
                                               minlength="10" 
                                               required 
-                                              placeholder="Partagez vos pensées...">{{ old('body') }}</textarea>
+                                              placeholder="Partagez vos pensées sur cette publication..."
+                                              oninput="autoResize(this)">{{ old('body') }}</textarea>
                                 </div>
-                                <button class="btn btn-primary hover-lift">
-                                    <i class="bi bi-send me-2"></i>Commenter
+                                <button class="btn btn-primary btn-lg hover-lift">
+                                    <i class="bi bi-send-fill me-2"></i>Publier le commentaire
                                 </button>
                             </form>
                         </div>
                     </div>
                 @else
-                    <div class="alert alert-warning border-0 shadow-sm animate-fade-in">
-                        <i class="bi bi-info-circle me-2"></i>
-                        Vous devez être connecté pour commenter. 
-                        <a href="{{ route('login') }}" class="alert-link">Se connecter</a>
+                    <div class="alert alert-warning border-0 shadow-lg animate-fade-in">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                            <div>
+                                <strong>Connexion requise</strong>
+                                <p class="mb-0">Vous devez être connecté pour commenter.</p>
+                            </div>
+                            <div class="ms-auto">
+                                <a href="{{ route('login') }}" class="btn btn-primary btn-sm hover-lift">Se connecter</a>
+                                <a href="{{ route('register') }}" class="btn btn-outline-primary btn-sm hover-lift ms-2">S'inscrire</a>
+                            </div>
+                        </div>
                     </div>
                 @endauth
 
                 {{-- Comments List --}}
                 <div class="comments-list">
-                    @forelse($article->comments->whereNull('parent_id') as $c)
-                        <div class="comment-card card border-0 shadow-sm mb-3 animate-scale-in">
-                            <div class="card-body p-3 p-sm-4">
+                    @forelse($article->comments->whereNull('parent_id') as $comment)
+                        <div class="comment-card card border-0 shadow-sm mb-4 animate-scale-in">
+                            <div class="card-body p-4">
                                 {{-- Comment Header --}}
                                 <div class="d-flex justify-content-between align-items-start mb-3">
                                     <div class="d-flex align-items-center">
-                                        <div class="avatar-sm me-2 me-sm-3">
+                                        <div class="avatar-lg me-3">
                                             <div class="avatar-placeholder bg-secondary bg-opacity-10 text-secondary rounded-circle d-flex align-items-center justify-content-center fw-bold" 
-                                                 style="width: 40px; height: 40px;">
-                                                {{ Str::substr($c->user->name, 0, 1) }}
+                                                 style="width: 50px; height: 50px;">
+                                                {{ Str::substr($comment->user->name, 0, 1) }}
                                             </div>
                                         </div>
                                         <div class="flex-grow-1">
-                                            <div class="fw-medium">
-                                                <a href="{{ route('user.article', $c->user->id) }}" 
+                                            <div class="fw-bold h5 mb-1">
+                                                <a href="{{ route('user.article', $comment->user->id) }}" 
                                                    class="text-decoration-none text-dark hover-primary">
-                                                    {{ $c->user->name }}
+                                                    {{ $comment->user->name }}
                                                 </a>
                                             </div>
-                                            <div class="small text-muted">
+                                            <div class="text-muted">
                                                 <i class="bi bi-clock me-1"></i>
-                                                {{ $c->created_at->diffForHumans() }}
+                                                {{ $comment->created_at->diffForHumans() }}
                                             </div>
                                         </div>
                                     </div>
                                     
                                     {{-- Comment Actions --}}
-                                    @if($c->canEditOrDelete())
+                                    @if($comment->canEditOrDelete())
                                         <div class="dropdown">
-                                            <button class="btn btn-sm btn-outline-secondary border-0" 
+                                            <button class="btn btn-outline-secondary border-0 hover-lift" 
                                                     type="button" 
                                                     data-bs-toggle="dropdown">
                                                 <i class="bi bi-three-dots"></i>
                                             </button>
-                                            <ul class="dropdown-menu dropdown-menu-end">
+                                            <ul class="dropdown-menu dropdown-menu-end shadow">
                                                 <li>
-                                                    <a href="{{ route('comments.edit', $c) }}" 
+                                                    <a href="{{ route('comments.edit', $comment) }}" 
                                                        class="dropdown-item">
                                                         <i class="bi bi-pencil me-2"></i>Modifier
                                                     </a>
                                                 </li>
                                                 <li>
-                                                    <form action="{{ route('comments.destroy', $c) }}" 
+                                                    <form action="{{ route('comments.destroy', $comment) }}" 
                                                           method="POST" 
                                                           class="d-inline">
                                                         @csrf
@@ -410,30 +541,30 @@
 
                                 {{-- Comment Body --}}
                                 <div class="comment-body mb-3">
-                                    <p class="mb-0 text-break">{{ $c->body }}</p>
+                                    <p class="mb-0 text-break fs-5">{{ $comment->body }}</p>
                                 </div>
 
                                 {{-- Comment Reactions --}}
                                 <div class="comment-reactions mb-3">
                                     @php
                                         $reactions = [
-                                            'like' => ['emoji' => '👍', 'class' => 'btn-outline-primary'],
-                                            'dislike' => ['emoji' => '👎', 'class' => 'btn-outline-secondary'],
-                                            'love' => ['emoji' => '❤️', 'class' => 'btn-outline-danger'],
-                                            'laugh' => ['emoji' => '😂', 'class' => 'btn-outline-warning'],
-                                            'angry' => ['emoji' => '😡', 'class' => 'btn-outline-dark'],
-                                            'sad' => ['emoji' => '😢', 'class' => 'btn-outline-info'],
+                                            'like' => ['emoji' => '👍', 'class' => 'btn-outline-primary', 'icon' => 'bi-hand-thumbs-up'],
+                                            'dislike' => ['emoji' => '👎', 'class' => 'btn-outline-secondary', 'icon' => 'bi-hand-thumbs-down'],
+                                            'love' => ['emoji' => '❤️', 'class' => 'btn-outline-danger', 'icon' => 'bi-heart'],
+                                            'laugh' => ['emoji' => '😂', 'class' => 'btn-outline-warning', 'icon' => 'bi-emoji-laughing'],
+                                            'angry' => ['emoji' => '😡', 'class' => 'btn-outline-dark', 'icon' => 'bi-emoji-angry'],
+                                            'sad' => ['emoji' => '😢', 'class' => 'btn-outline-info', 'icon' => 'bi-emoji-frown'],
                                         ];
                                     @endphp
 
-                                    <div class="d-flex flex-wrap gap-1">
+                                    <div class="d-flex flex-wrap gap-2">
                                         @foreach ($reactions as $type => $data)
-                                            <form action="{{ route('comments.react', $c) }}" method="POST" class="m-0">
+                                            <form action="{{ route('comments.react', $comment) }}" method="POST" class="m-0">
                                                 @csrf
                                                 <input type="hidden" name="type" value="{{ $type }}">
                                                 <button class="btn btn-sm {{ $data['class'] }} hover-lift reaction-btn">
-                                                    {{ $data['emoji'] }} 
-                                                    <span class="ms-1">{{ $c->reactions->where('type', $type)->count() }}</span>
+                                                    <i class="{{ $data['icon'] }} me-1"></i>
+                                                    <span>{{ $comment->reactions->where('type', $type)->count() }}</span>
                                                 </button>
                                             </form>
                                         @endforeach
@@ -443,15 +574,15 @@
                                 {{-- Reply Form --}}
                                 @auth
                                     <div class="reply-form mt-3">
-                                        <form action="{{ route('comments.reply', $c) }}" method="POST">
+                                        <form action="{{ route('comments.reply', $comment) }}" method="POST" class="reply-form-inner">
                                             @csrf
                                             <div class="input-group">
                                                 <textarea name="body" 
-                                                          class="form-control form-control-sm focus-shadow" 
+                                                          class="form-control focus-shadow" 
                                                           rows="2" 
-                                                          placeholder="Répondre à ce commentaire..."></textarea>
-                                                <button class="btn btn-primary btn-sm hover-lift">
-                                                    <i class="bi bi-reply"></i>
+                                                          placeholder="Répondre à {{ $comment->user->name }}..."></textarea>
+                                                <button class="btn btn-primary hover-lift">
+                                                    <i class="bi bi-reply-fill"></i>
                                                 </button>
                                             </div>
                                         </form>
@@ -459,21 +590,21 @@
                                 @endauth
 
                                 {{-- Replies --}}
-                                @if($c->replies->count() > 0)
-                                    <div class="replies-container mt-3 ps-3 ps-sm-4 border-start border-2">
-                                        @foreach ($c->replies as $reply)
+                                @if($comment->replies->count() > 0)
+                                    <div class="replies-container mt-3 ps-3 ps-md-4 border-start border-3 border-primary">
+                                        @foreach ($comment->replies as $reply)
                                             <div class="reply-card card border-0 bg-light mb-2 animate-fade-in">
-                                                <div class="card-body p-2 p-sm-3">
+                                                <div class="card-body p-3">
                                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                                         <div class="d-flex align-items-center">
-                                                            <div class="avatar-xs me-2">
+                                                            <div class="avatar-sm me-2">
                                                                 <div class="avatar-placeholder bg-light text-muted rounded-circle d-flex align-items-center justify-content-center fw-bold" 
-                                                                     style="width: 30px; height: 30px; font-size: 0.8rem;">
+                                                                     style="width: 35px; height: 35px; font-size: 0.8rem;">
                                                                     {{ Str::substr($reply->user->name, 0, 1) }}
                                                                 </div>
                                                             </div>
                                                             <div>
-                                                                <div class="small fw-medium">
+                                                                <div class="fw-bold">
                                                                     {{ $reply->user->name }}
                                                                 </div>
                                                                 <div class="small text-muted">
@@ -482,7 +613,7 @@
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="small text-break">{{ $reply->body }}</div>
+                                                    <div class="text-break">{{ $reply->body }}</div>
                                                 </div>
                                             </div>
                                         @endforeach
@@ -491,10 +622,10 @@
                             </div>
                         </div>
                     @empty
-                        <div class="text-center py-5 text-muted animate-fade-in">
-                            <i class="bi bi-chat-square display-4 mb-3"></i>
-                            <p class="mb-0">Aucun commentaire pour le moment.</p>
-                            <small>Soyez le premier à commenter cette publication !</small>
+                        <div class="empty-comments text-center py-5 text-muted animate-fade-in">
+                            <i class="bi bi-chat-square display-1 mb-3"></i>
+                            <h4 class="mb-2">Aucun commentaire pour le moment</h4>
+                            <p class="mb-0">Soyez le premier à commenter cette publication !</p>
                         </div>
                     @endforelse
                 </div>
@@ -542,412 +673,711 @@
 </div>
 
 <style>
-/* ===== RESPONSIVE TYPOGRAPHY ===== */
+/* ===== GLOBAL STYLES ===== */
+:root {
+  --primary-color: #4361ee;
+  --secondary-color: #3f37c9;
+  --accent-color: #ff7b00;
+  --accent-light: #ff9e33;
+  --dark-color: #1a1a2e;
+  --light-color: #f8f9fa;
+  --text-dark: #2d3748;
+  --text-light: #718096;
+  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== FLOATING ACTIONS ===== */
+.floating-actions {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.floating-actions .btn {
+  border-radius: 50px;
+  padding: 1rem;
+  box-shadow: var(--shadow-lg);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+}
+
+.share-floating-btn {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* ===== TYPOGRAPHY ===== */
 .article-title {
-    font-size: clamp(1.5rem, 4vw, 2.5rem);
-    line-height: 1.3;
-    word-wrap: break-word;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  line-height: 1.3;
+  word-wrap: break-word;
 }
 
-.content-body {
-    font-size: clamp(1rem, 2.5vw, 1.1rem);
-    line-height: 1.6;
+.text-gradient {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-/* ===== IMAGE RATIO CONTAINERS ===== */
+.text-accent {
+  color: var(--accent-color) !important;
+}
+
+/* ===== BREADCRUMB ===== */
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+}
+
+.breadcrumb-item a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.breadcrumb-item a:hover {
+  color: var(--secondary-color);
+}
+
+/* ===== AVATARS ===== */
+.avatar-lg {
+  width: 60px;
+  height: 60px;
+}
+
+.avatar-sm {
+  width: 35px;
+  height: 35px;
+}
+
+.avatar-placeholder {
+  font-weight: 600;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== ARTICLE STATS ===== */
+.article-stats {
+  padding: 1rem 0;
+}
+
+.stat-item {
+  padding: 0.5rem 1rem;
+  background: rgba(67, 97, 238, 0.05);
+  border-radius: 10px;
+  transition: var(--transition);
+}
+
+.stat-item:hover {
+  background: rgba(67, 97, 238, 0.1);
+  transform: translateY(-2px);
+}
+
+/* ===== MEDIA CONTAINERS ===== */
+.main-media-container {
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.video-player-container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+  background: #000;
+}
+
+.main-video-player {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.video-controls-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.video-player-container:hover .video-controls-overlay {
+  opacity: 1;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.control-btn {
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .image-ratio-container {
-    position: relative;
-    width: 100%;
-    padding-bottom: 66.67%; /* Ratio 3:2 */
-    overflow: hidden;
-    background: #f8f9fa;
-}
-
-.video-ratio-container {
-    position: relative;
-    width: 100%;
-    padding-bottom: 56.25%; /* Ratio 16:9 */
-    overflow: hidden;
-    background: #000;
+  position: relative;
+  width: 100%;
+  padding-bottom: 66.67%; /* Ratio 3:2 */
+  overflow: hidden;
+  background: #f8f9fa;
 }
 
 .article-main-image,
 .media-item {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: var(--transition);
 }
 
-/* ===== CURSOR & HOVER EFFECTS ===== */
-.cursor-zoom {
-    cursor: zoom-in;
+/* ===== VIDEO THUMBNAILS ===== */
+.video-thumbnail-container {
+  position: relative;
+  cursor: pointer;
 }
 
-.media-card:hover .media-item {
-    transform: scale(1.05);
+.video-play-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.3s ease;
 }
 
-.video-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.video-thumbnail-container:hover .video-play-overlay {
+  opacity: 0.8;
+}
+
+.play-icon-sm {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 123, 0, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1rem;
+}
+
+/* ===== CONTENT BODY ===== */
+.content-body {
+  font-size: clamp(1rem, 2.5vw, 1.1rem);
+  line-height: 1.7;
+}
+
+.content-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.content-body p {
+  margin-bottom: 1.5rem;
+}
+
+/* ===== ACTION BUTTONS ===== */
+.action-buttons {
+  padding: 2rem 0;
+  border-top: 2px solid #f8f9fa;
+  border-bottom: 2px solid #f8f9fa;
+}
+
+/* ===== RATING SECTION ===== */
+.rating-section {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.star-rating .btn {
+  transition: var(--transition);
+}
+
+.star-rating .btn:hover {
+  transform: scale(1.2);
+}
+
+/* ===== COMMENTS SECTION ===== */
+.comment-form-card {
+  border-radius: 15px;
+}
+
+.comment-card {
+  border-radius: 15px;
+  transition: var(--transition);
+}
+
+.comment-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md) !important;
+}
+
+.replies-container {
+  border-left-color: var(--primary-color) !important;
+}
+
+.reply-card {
+  border-radius: 10px;
+  transition: var(--transition);
+}
+
+.reply-card:hover {
+  transform: translateX(5px);
+}
+
+/* ===== SHARE BUTTONS ===== */
+.share-platform-btn {
+  border-radius: 12px;
+  transition: var(--transition);
+  padding: 1rem 0.5rem;
+}
+
+.share-platform-btn:hover {
+  transform: translateY(-5px) scale(1.05);
+}
+
+/* ===== ANIMATIONS ===== */
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
     opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.video-ratio-container:hover .video-overlay {
+    transform: translateY(30px);
+  }
+  to { 
     opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.video-overlay i {
-    font-size: 3rem;
-    color: white;
-    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+@keyframes scaleIn {
+  from { 
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ===== HOVER EFFECTS ===== */
+.hover-scale {
+  transition: var(--transition);
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.hover-lift {
+  transition: var(--transition);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.hover-primary:hover {
+  color: var(--primary-color) !important;
+}
+
+.focus-shadow:focus {
+  box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.25) !important;
+  border-color: var(--primary-color);
+}
+
+.cursor-zoom {
+  cursor: zoom-in;
+}
+
+.cursor-pointer {
+  cursor: pointer;
 }
 
 /* ===== LIGHTBOX STYLES ===== */
 .lightbox {
-    display: none;
-    position: fixed;
-    z-index: 9999;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.95);
-    backdrop-filter: blur(10px);
-    opacity: 0;
-    transition: opacity 0.3s ease;
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .lightbox.active {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: lightboxFadeIn 0.3s ease forwards;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: lightboxFadeIn 0.3s ease forwards;
 }
 
 @keyframes lightboxFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .lightbox-content {
-    position: relative;
-    width: 95%;
-    max-width: 1200px;
-    max-height: 95vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+  position: relative;
+  width: 95%;
+  max-width: 1200px;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .video-lightbox-content {
-    max-width: 900px;
+  max-width: 900px;
 }
 
-/* Lightbox Close Button */
 .lightbox-close {
-    position: absolute;
-    top: -50px;
-    right: 0;
-    color: white;
-    font-size: 2rem;
-    cursor: pointer;
-    background: rgba(255, 255, 255, 0.1);
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+  position: absolute;
+  top: -50px;
+  right: 0;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.1);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .lightbox-close:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
 }
 
-/* Lightbox Image Container */
 .lightbox-image-container {
-    position: relative;
-    width: 100%;
-    max-height: 80vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  position: relative;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .lightbox-image {
-    max-width: 100%;
-    max-height: 80vh;
-    object-fit: contain;
-    border-radius: 12px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-    animation: imageZoomIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: imageZoomIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes imageZoomIn {
-    from {
-        opacity: 0;
-        transform: scale(0.8);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-/* Video Container */
 .video-container {
-    width: 100%;
-    max-height: 80vh;
+  width: 100%;
+  max-height: 80vh;
 }
 
 .lightbox-video {
-    width: 100%;
-    height: auto;
-    max-height: 80vh;
-    border-radius: 12px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  height: auto;
+  max-height: 80vh;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
 
-/* Lightbox Caption */
 .lightbox-caption {
-    position: absolute;
-    bottom: -60px;
-    left: 0;
-    width: 100%;
-    text-align: center;
-    color: white;
-    font-size: 1.1rem;
-    padding: 1rem;
-    background: rgba(0, 0, 0, 0.7);
-    border-radius: 8px;
-    backdrop-filter: blur(10px);
+  position: absolute;
+  bottom: -60px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  color: white;
+  font-size: 1.1rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
 }
 
-/* Lightbox Navigation */
 .lightbox-nav {
-    position: absolute;
-    top: 50%;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    transform: translateY(-50%);
-    padding: 0 2rem;
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  transform: translateY(-50%);
+  padding: 0 2rem;
 }
 
 .lightbox-nav-btn {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: none;
-    font-size: 1.5rem;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  font-size: 1.5rem;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .lightbox-nav-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
 }
 
-/* Lightbox Counter */
 .lightbox-counter {
-    position: absolute;
-    top: -50px;
-    left: 0;
-    color: white;
-    font-size: 1rem;
-    background: rgba(255, 255, 255, 0.1);
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    backdrop-filter: blur(10px);
+  position: absolute;
+  top: -50px;
+  left: 0;
+  color: white;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
 }
 
-/* ===== MOBILE OPTIMIZATIONS ===== */
+/* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
-    .container-fluid {
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
-    
-    .image-ratio-container {
-        padding-bottom: 75%; /* Ratio 4:3 sur mobile */
-    }
-    
-    .video-ratio-container {
-        padding-bottom: 75%;
-    }
-    
-    /* Lightbox Mobile */
-    .lightbox-content {
-        width: 98%;
-        max-height: 90vh;
-    }
-    
-    .lightbox-close {
-        top: 10px;
-        right: 10px;
-        width: 45px;
-        height: 45px;
-        font-size: 1.5rem;
-    }
-    
-    .lightbox-nav {
-        padding: 0 1rem;
-    }
-    
-    .lightbox-nav-btn {
-        width: 50px;
-        height: 50px;
-        font-size: 1.2rem;
-    }
-    
-    .lightbox-counter {
-        top: 10px;
-        left: 10px;
-    }
-    
-    .lightbox-caption {
-        bottom: -80px;
-        font-size: 1rem;
-    }
-    
-    .video-overlay i {
-        font-size: 2.5rem;
-    }
+  .container-fluid {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .floating-actions {
+    bottom: 1.5rem;
+    right: 1.5rem;
+  }
+  
+  .floating-actions .btn {
+    width: 50px;
+    height: 50px;
+    padding: 0.875rem;
+  }
+  
+  .article-stats {
+    gap: 0.5rem;
+  }
+  
+  .stat-item {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .avatar-lg {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .control-btn {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .lightbox-content {
+    width: 98%;
+    max-height: 90vh;
+  }
+  
+  .lightbox-close {
+    top: 10px;
+    right: 10px;
+    width: 45px;
+    height: 45px;
+    font-size: 1.5rem;
+  }
+  
+  .lightbox-nav {
+    padding: 0 1rem;
+  }
+  
+  .lightbox-nav-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+  }
+  
+  .lightbox-counter {
+    top: 10px;
+    left: 10px;
+  }
+  
+  .lightbox-caption {
+    bottom: -80px;
+    font-size: 1rem;
+  }
 }
 
 @media (max-width: 576px) {
-    .media-gallery .col-6 {
-        flex: 0 0 50%;
-        max-width: 50%;
-    }
-    
-    .image-ratio-container {
-        padding-bottom: 100%; /* Ratio carré sur très petit mobile */
-    }
-    
-    .lightbox-nav-btn {
-        width: 45px;
-        height: 45px;
-        font-size: 1.1rem;
-    }
-    
-    .lightbox-close {
-        width: 40px;
-        height: 40px;
-        font-size: 1.2rem;
-    }
+  .floating-actions {
+    bottom: 1rem;
+    right: 1rem;
+  }
+  
+  .floating-actions .btn {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .article-title {
+    font-size: 1.5rem;
+  }
+  
+  .content-body {
+    font-size: 1rem;
+  }
+  
+  .action-buttons .btn {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+  }
+  
+  .comment-card .card-body {
+    padding: 1.5rem;
+  }
+  
+  .avatar-lg {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .lightbox-nav-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 1.1rem;
+  }
+  
+  .lightbox-close {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
 }
 
-/* ===== TOUCH DEVICE OPTIMIZATIONS ===== */
-@media (hover: none) and (pointer: coarse) {
-    .lightbox-nav-btn,
-    .lightbox-close {
-        min-width: 44px;
-        min-height: 44px;
-    }
-    
-    .media-card:hover .media-item {
-        transform: none;
-    }
-    
-    .video-ratio-container:hover .video-overlay {
-        opacity: 0.7;
-    }
+@media (max-width: 400px) {
+  .floating-actions {
+    bottom: 0.5rem;
+    right: 0.5rem;
+  }
+  
+  .article-stats {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .stat-item {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
-/* ===== EXISTING ANIMATIONS ===== */
-.animate-fade-in {
-    animation: fadeIn 0.6s ease-in-out;
-}
-
-.animate-slide-up {
-    animation: slideUp 0.6s ease-out;
-}
-
-.animate-scale-in {
-    animation: scaleIn 0.5s ease-out;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes slideUp {
-    from { 
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to { 
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes scaleIn {
-    from { 
-        opacity: 0;
-        transform: scale(0.9);
-    }
-    to { 
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-/* ===== EXISTING UTILITIES ===== */
-.hover-lift {
-    transition: all 0.3s ease;
-}
-
-.hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.hover-primary:hover {
-    color: #4361ee !important;
-}
-
-.focus-shadow:focus {
-    box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.25) !important;
-    border-color: #4361ee;
-}
-
+/* ===== UTILITY CLASSES ===== */
 .text-break {
-    word-wrap: break-word;
-    overflow-wrap: break-word;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .copy-link-btn.copied {
-    background-color: #28a745 !important;
+  background-color: #28a745 !important;
+}
+
+.empty-comments i {
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
 }
 </style>
 
@@ -957,215 +1387,304 @@ let currentLightboxIndex = 0;
 let lightboxImages = [];
 
 function openLightbox(imageSrc, caption) {
-    const lightbox = document.getElementById('lightbox');
-    const lightboxImg = document.getElementById('lightboxImage');
-    const captionText = document.getElementById('lightboxCaption');
-    const counter = document.getElementById('lightboxCounter');
-    
-    // Collect all clickable images
-    lightboxImages = Array.from(document.querySelectorAll('.cursor-zoom[src]'));
-    currentLightboxIndex = lightboxImages.findIndex(img => img.src.includes(imageSrc));
-    
-    // Show lightbox with animation
-    lightbox.classList.add('active');
-    lightboxImg.src = imageSrc;
-    captionText.innerHTML = caption || '';
-    updateLightboxCounter();
-    
-    document.body.style.overflow = 'hidden';
+  const lightbox = document.getElementById('lightbox');
+  const lightboxImg = document.getElementById('lightboxImage');
+  const captionText = document.getElementById('lightboxCaption');
+  const counter = document.getElementById('lightboxCounter');
+  
+  // Collect all clickable images
+  lightboxImages = Array.from(document.querySelectorAll('.cursor-zoom[src]'));
+  currentLightboxIndex = lightboxImages.findIndex(img => img.src.includes(imageSrc));
+  
+  // Show lightbox with animation
+  lightbox.classList.add('active');
+  lightboxImg.src = imageSrc;
+  captionText.innerHTML = caption || '';
+  updateLightboxCounter();
+  
+  document.body.style.overflow = 'hidden';
 }
 
 function closeLightbox() {
-    const lightbox = document.getElementById('lightbox');
-    lightbox.classList.remove('active');
-    
-    setTimeout(() => {
-        lightbox.style.display = 'none';
-    }, 300);
-    
-    document.body.style.overflow = 'auto';
+  const lightbox = document.getElementById('lightbox');
+  lightbox.classList.remove('active');
+  
+  setTimeout(() => {
+    lightbox.style.display = 'none';
+  }, 300);
+  
+  document.body.style.overflow = 'auto';
 }
 
 function navigateLightbox(direction) {
-    if (lightboxImages.length === 0) return;
-    
-    currentLightboxIndex += direction;
-    
-    if (currentLightboxIndex >= lightboxImages.length) {
-        currentLightboxIndex = 0;
-    } else if (currentLightboxIndex < 0) {
-        currentLightboxIndex = lightboxImages.length - 1;
-    }
-    
-    const lightboxImg = document.getElementById('lightboxImage');
-    const captionText = document.getElementById('lightboxCaption');
-    
-    // Add fade transition
-    lightboxImg.style.opacity = '0';
-    
-    setTimeout(() => {
-        lightboxImg.src = lightboxImages[currentLightboxIndex].src;
-        captionText.innerHTML = lightboxImages[currentLightboxIndex].alt || '';
-        lightboxImg.style.opacity = '1';
-        updateLightboxCounter();
-    }, 200);
+  if (lightboxImages.length === 0) return;
+  
+  currentLightboxIndex += direction;
+  
+  if (currentLightboxIndex >= lightboxImages.length) {
+    currentLightboxIndex = 0;
+  } else if (currentLightboxIndex < 0) {
+    currentLightboxIndex = lightboxImages.length - 1;
+  }
+  
+  const lightboxImg = document.getElementById('lightboxImage');
+  const captionText = document.getElementById('lightboxCaption');
+  
+  // Add fade transition
+  lightboxImg.style.opacity = '0';
+  
+  setTimeout(() => {
+    lightboxImg.src = lightboxImages[currentLightboxIndex].src;
+    captionText.innerHTML = lightboxImages[currentLightboxIndex].alt || '';
+    lightboxImg.style.opacity = '1';
+    updateLightboxCounter();
+  }, 200);
 }
 
 function updateLightboxCounter() {
-    const counter = document.getElementById('lightboxCounter');
-    counter.textContent = `${currentLightboxIndex + 1}/${lightboxImages.length}`;
+  const counter = document.getElementById('lightboxCounter');
+  counter.textContent = `${currentLightboxIndex + 1}/${lightboxImages.length}`;
 }
 
 // ===== VIDEO LIGHTBOX FUNCTIONALITY =====
-function openVideoLightbox(videoSrc) {
-    const lightbox = document.getElementById('videoLightbox');
-    const lightboxVideo = document.getElementById('lightboxVideo');
-    
-    lightbox.classList.add('active');
-    lightboxVideo.src = videoSrc;
-    lightboxVideo.load();
-    
-    document.body.style.overflow = 'hidden';
+function playVideo(videoSrc) {
+  const lightbox = document.getElementById('videoLightbox');
+  const lightboxVideo = document.getElementById('lightboxVideo');
+  
+  lightbox.classList.add('active');
+  lightboxVideo.src = videoSrc;
+  lightboxVideo.load();
+  lightboxVideo.play();
+  
+  document.body.style.overflow = 'hidden';
 }
 
 function closeVideoLightbox() {
-    const lightbox = document.getElementById('videoLightbox');
-    const lightboxVideo = document.getElementById('lightboxVideo');
-    
-    lightbox.classList.remove('active');
-    lightboxVideo.pause();
-    
-    setTimeout(() => {
-        lightbox.style.display = 'none';
-        lightboxVideo.src = '';
-    }, 300);
-    
-    document.body.style.overflow = 'auto';
+  const lightbox = document.getElementById('videoLightbox');
+  const lightboxVideo = document.getElementById('lightboxVideo');
+  
+  lightbox.classList.remove('active');
+  lightboxVideo.pause();
+  
+  setTimeout(() => {
+    lightbox.style.display = 'none';
+    lightboxVideo.src = '';
+  }, 300);
+  
+  document.body.style.overflow = 'auto';
 }
 
-// ===== EVENT LISTENERS =====
-document.addEventListener('DOMContentLoaded', function() {
-    // Close lightboxes on outside click
-    document.addEventListener('click', function(event) {
-        const lightbox = document.getElementById('lightbox');
-        const videoLightbox = document.getElementById('videoLightbox');
-        
-        if (event.target === lightbox) {
-            closeLightbox();
-        }
-        
-        if (event.target === videoLightbox) {
-            closeVideoLightbox();
-        }
-    });
-    
-    // Keyboard navigation
-    document.addEventListener('keydown', function(event) {
-        const lightbox = document.getElementById('lightbox');
-        const videoLightbox = document.getElementById('videoLightbox');
-        
-        if (lightbox.classList.contains('active')) {
-            if (event.key === 'Escape') {
-                closeLightbox();
-            } else if (event.key === 'ArrowLeft') {
-                navigateLightbox(-1);
-            } else if (event.key === 'ArrowRight') {
-                navigateLightbox(1);
-            }
-        }
-        
-        if (videoLightbox.classList.contains('active') && event.key === 'Escape') {
-            closeVideoLightbox();
-        }
-    });
-    
-    // Touch gestures for mobile
-    let touchStartX = 0;
-    let touchEndX = 0;
-    
-    document.addEventListener('touchstart', function(event) {
-        touchStartX = event.changedTouches[0].screenX;
-    });
-    
-    document.addEventListener('touchend', function(event) {
-        touchEndX = event.changedTouches[0].screenX;
-        handleSwipe();
-    });
-    
-    function handleSwipe() {
-        const lightbox = document.getElementById('lightbox');
-        
-        if (lightbox.classList.contains('active')) {
-            const swipeThreshold = 50;
-            
-            if (touchEndX < touchStartX - swipeThreshold) {
-                navigateLightbox(1); // Swipe left - next image
-            }
-            
-            if (touchEndX > touchStartX + swipeThreshold) {
-                navigateLightbox(-1); // Swipe right - previous image
-            }
-        }
-    }
-    
-    // Existing functionality
-    const copyLinkBtn = document.querySelector('.copy-link-btn');
-    if (copyLinkBtn) {
-        copyLinkBtn.addEventListener('click', function() {
-            navigator.clipboard.writeText('{{ request()->fullUrl() }}').then(() => {
-                const originalHTML = this.innerHTML;
-                this.innerHTML = '<i class="fas fa-check me-2"></i>Lien copié';
-                this.classList.add('copied');
-                
-                setTimeout(() => {
-                    this.innerHTML = originalHTML;
-                    this.classList.remove('copied');
-                }, 2000);
-            });
-        });
-    }
-    
-    // Star rating hover effect
-    const starBtns = document.querySelectorAll('.star-btn');
-    starBtns.forEach((btn, index) => {
-        btn.addEventListener('mouseenter', () => {
-            starBtns.forEach((star, starIndex) => {
-                if (starIndex <= index) {
-                    star.querySelector('i').className = 'bi bi-star-fill text-warning';
-                }
-            });
-        });
-        
-        btn.addEventListener('mouseleave', () => {
-            starBtns.forEach(star => {
-                star.querySelector('i').className = 'bi bi-star';
-            });
-        });
-    });
-    
-    // Scroll animations
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '50px'
-    };
-    
-    const observer = new IntersectionObserver(function(entries) {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
-        });
-    }, observerOptions);
-    
-    document.querySelectorAll('.animate-fade-in, .animate-slide-up, .animate-scale-in').forEach(el => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(20px)';
-        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(el);
-    });
-});
-</script>
+// ===== SHARE MODAL FUNCTIONALITY =====
+function openShareModal() {
+  const shareModal = new bootstrap.Modal(document.getElementById('shareModal'));
+  shareModal.show();
+}
 
-<!-- Rest of your existing content for action buttons, share section, rating, comments -->
+// ===== STAR RATING FUNCTIONALITY =====
+function highlightStars(count) {
+  const stars = document.querySelectorAll('.star-btn');
+  stars.forEach((star, index) => {
+    const icon = star.querySelector('i');
+    if (index < count) {
+      icon.className = 'bi bi-star-fill text-warning';
+    } else {
+      icon.className = 'bi bi-star';
+    }
+  });
+}
+
+function resetStars() {
+  const stars = document.querySelectorAll('.star-btn');
+  stars.forEach(star => {
+    star.querySelector('i').className = 'bi bi-star';
+  });
+}
+
+// ===== SCROLL FUNCTIONS =====
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function scrollToComments() {
+  const commentsSection = document.querySelector('.comments-section');
+  commentsSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ===== AUTO-RESIZE TEXTAREA =====
+function autoResize(textarea) {
+  textarea.style.height = 'auto';
+  textarea.style.height = textarea.scrollHeight + 'px';
+}
+
+// ===== INITIALIZATION =====
+document.addEventListener('DOMContentLoaded', function() {
+  // Close lightboxes on outside click
+  document.addEventListener('click', function(event) {
+    const lightbox = document.getElementById('lightbox');
+    const videoLightbox = document.getElementById('videoLightbox');
+    
+    if (event.target === lightbox) {
+      closeLightbox();
+    }
+    
+    if (event.target === videoLightbox) {
+      closeVideoLightbox();
+    }
+  });
+  
+  // Keyboard navigation
+  document.addEventListener('keydown', function(event) {
+    const lightbox = document.getElementById('lightbox');
+    const videoLightbox = document.getElementById('videoLightbox');
+    
+    if (lightbox.classList.contains('active')) {
+      if (event.key === 'Escape') {
+        closeLightbox();
+      } else if (event.key === 'ArrowLeft') {
+        navigateLightbox(-1);
+      } else if (event.key === 'ArrowRight') {
+        navigateLightbox(1);
+      }
+    }
+    
+    if (videoLightbox.classList.contains('active') && event.key === 'Escape') {
+      closeVideoLightbox();
+    }
+  });
+  
+  // Copy link functionality
+  const copyLinkBtn = document.querySelector('.copy-link-btn');
+  if (copyLinkBtn) {
+    copyLinkBtn.addEventListener('click', function() {
+      navigator.clipboard.writeText('{{ request()->fullUrl() }}').then(() => {
+        const originalHTML = this.innerHTML;
+        this.innerHTML = '<i class="fas fa-check fa-lg"></i><span class="d-block mt-1 small">Lien copié</span>';
+        this.classList.add('copied');
+        
+        setTimeout(() => {
+          this.innerHTML = originalHTML;
+          this.classList.remove('copied');
+        }, 2000);
+      });
+    });
+  }
+  
+  // Video controls
+  const mainVideo = document.querySelector('.main-video-player');
+  const playPauseBtn = document.querySelector('.play-pause-btn');
+  const fullscreenBtn = document.querySelector('.fullscreen-btn');
+  
+  if (mainVideo && playPauseBtn) {
+    playPauseBtn.addEventListener('click', function() {
+      if (mainVideo.paused) {
+        mainVideo.play();
+        this.innerHTML = '<i class="bi bi-pause-fill"></i>';
+      } else {
+        mainVideo.pause();
+        this.innerHTML = '<i class="bi bi-play-fill"></i>';
+      }
+    });
+  }
+  
+  if (mainVideo && fullscreenBtn) {
+    fullscreenBtn.addEventListener('click', function() {
+      if (mainVideo.requestFullscreen) {
+        mainVideo.requestFullscreen();
+      } else if (mainVideo.webkitRequestFullscreen) {
+        mainVideo.webkitRequestFullscreen();
+      } else if (mainVideo.msRequestFullscreen) {
+        mainVideo.msRequestFullscreen();
+      }
+    });
+  }
+  
+  // Auto-resize comment textareas
+  const textareas = document.querySelectorAll('textarea');
+  textareas.forEach(textarea => {
+    textarea.addEventListener('input', function() {
+      autoResize(this);
+    });
+  });
+  
+  // Intersection Observer for animations
+  const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '50px'
+  };
+  
+  const observer = new IntersectionObserver(function(entries) {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0) scale(1)';
+      }
+    });
+  }, observerOptions);
+  
+  // Observe all animated elements
+  document.querySelectorAll('.animate-fade-in, .animate-slide-up, .animate-scale-in').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px) scale(0.95)';
+    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    observer.observe(el);
+  });
+  
+  // Hide floating actions on scroll
+  let lastScrollTop = 0;
+  const floatingActions = document.querySelector('.floating-actions');
+  
+  if (floatingActions) {
+    window.addEventListener('scroll', function() {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      
+      if (scrollTop > lastScrollTop && scrollTop > 100) {
+        // Scrolling down
+        floatingActions.style.transform = 'translateY(100px)';
+        floatingActions.style.opacity = '0';
+      } else {
+        // Scrolling up
+        floatingActions.style.transform = 'translateY(0)';
+        floatingActions.style.opacity = '1';
+      }
+      
+      lastScrollTop = scrollTop;
+    }, { passive: true });
+  }
+});
+
+// Social sharing with video support
+function shareOnPlatform(platform, hasVideo = false) {
+  const url = encodeURIComponent(window.location.href);
+  const title = encodeURIComponent('{{ $article->title }}');
+  const description = encodeURIComponent('{{ Str::limit(strip_tags($article->content), 150) }}');
+  
+  let shareUrl = '';
+  
+  switch(platform) {
+    case 'facebook':
+      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+      break;
+    case 'twitter':
+      shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${title}`;
+      break;
+    case 'whatsapp':
+      if (hasVideo) {
+        shareUrl = `https://wa.me/?text=${title}%0A%0A🎥 Vidéo disponible : ${url}`;
+      } else {
+        shareUrl = `https://wa.me/?text=${title}%0A%0A${url}`;
+      }
+      break;
+    case 'telegram':
+      shareUrl = `https://t.me/share/url?url=${url}&text=${title}`;
+      break;
+    case 'linkedin':
+      shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
+      break;
+  }
+  
+  if (shareUrl) {
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+  }
+}
+</script>
 @endsection
