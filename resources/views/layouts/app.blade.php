@@ -755,7 +755,7 @@
   <div class="container">
     <a class="navbar-brand fw-bold" href="{{ route('articles.index') }}">
       <img src="{{ asset('flashpost.png') }}" alt="FlashPost Logo">
-      {{ config('app.name', $settings->site_name ?? 'FlashPost') }}
+      <span class="text-primary">Flash</span><span class="text-accent">Post</span></span>
     </a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
@@ -900,7 +900,7 @@
   <div class="container">
     <div class="row">
       <div class="col-lg-4 col-md-6 mb-4">
-        <h4 class="fw-bold text-gradient">{{ $settings->site_name ?? 'FlashPost' }}</h4>
+        <h4 class="fw-bold text-gradient"><span class="text-primary">Flash</span><span class="text-accent">Post</span></span></h4>
         <p class="mt-3 text-light">Plateforme de publication et de divertissement. Partagez vos idées, découvrez du contenu et connectez-vous avec votre audience.</p>
         <div class="social-links mt-4">
           <a href="#"><i class="fab fa-facebook-f"></i></a>

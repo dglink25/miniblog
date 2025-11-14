@@ -60,8 +60,8 @@
   <div class="hero-section mb-5 animate-fade-in">
     <div class="row align-items-center">
       <div class="col-12 col-lg-8">
-        <h1 class="display-5 fw-bold text-gradient mb-3">
-          Bienvenue sur <span class="text-accent">FlashPost</span>
+        <h1 class="display-5 fw-bold mb-3">
+          Bienvenue sur <span class="brand-name"><span class="text-primary">Flash</span><span class="text-accent">Post</span></span>
         </h1>
         <p class="lead text-muted mb-4">
           Découvrez, partagez et interagissez avec du contenu passionnant. 
@@ -211,7 +211,7 @@
 
   {{-- Articles Grid Header --}}
   <div class="d-flex justify-content-between align-items-center mb-4" id="articles-grid">
-    <h2 class="h3 fw-bold text-gradient">
+    <h2 class="h3 fw-bold">
       <i class="bi bi-newspaper me-2"></i>Publications récentes
     </h2>
     <div class="d-flex gap-2">
@@ -293,30 +293,33 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-4">
-        <form id="suggestionForm" action="{{ route('suggestions.store') }}" method="POST">
+        <form method="POST" action="{{ route('suggestions.store') }}" id="suggestionForm">
           @csrf
-          <div class="mb-4">
-            <label for="suggestionTitle" class="form-label fw-bold">Titre de la suggestion</label>
-            <input type="text" class="form-control form-control-lg" id="suggestionTitle" name="subject" 
-                   placeholder="Ex: Amélioration de l'interface mobile" required>
+          <div class="mb-3">
+            <label class="form-label">Objet</label>
+            <input class="form-control" name="subject" value="{{ old('subject') }}" required>
           </div>
-          <div class="mb-4">
-            <label for="suggestionContent" class="form-label fw-bold">Description détaillée</label>
-            <textarea class="form-control" id="suggestionContent" name="message" rows="5" 
-                      placeholder="Décrivez votre idée en détail..." required></textarea>
+          <div class="mb-3">
+            <label class="form-label">Message</label>
+            <textarea class="form-control" name="message" rows="6" required>{{ old('message') }}</textarea>
           </div>
-          <div class="alert alert-info">
-            <i class="bi bi-info-circle me-2"></i>
-            Votre suggestion sera examinée par notre équipe. Merci pour votre contribution !
-          </div>
+          <button type="submit" class="btn btn-primary">Envoyer</button>
         </form>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-        <button type="submit" form="suggestionForm" class="btn btn-primary">
-          <i class="bi bi-send me-2"></i>Envoyer la suggestion
-        </button>
-      </div>
+    </div>
+  </div>
+</div>
+
+{{-- Success Toast --}}
+<div class="toast-container position-fixed top-0 end-0 p-3">
+  <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="toast-header bg-success text-white">
+      <i class="bi bi-check-circle-fill me-2"></i>
+      <strong class="me-auto">Succès</strong>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+    <div class="toast-body bg-light">
+      Votre suggestion a été envoyée avec succès !
     </div>
   </div>
 </div>
@@ -338,11 +341,14 @@
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.15);
 }
 
-.text-gradient {
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+.brand-name {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.text-primary {
+  color: var(--primary-color) !important;
 }
 
 .text-accent {
@@ -500,11 +506,49 @@
   color: var(--accent-color) !important;
 }
 
+/* Enhanced Media Section */
 .card-media {
-  height: 220px;
+  height: 320px;
   background: #f8f9fa;
   position: relative;
   overflow: hidden;
+  cursor: pointer;
+}
+
+.media-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.media-fullscreen img,
+.media-fullscreen video {
+  max-width: 95%;
+  max-height: 95%;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.fullscreen-controls {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 2001;
+}
+
+.fullscreen-controls .btn {
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  margin-left: 10px;
 }
 
 .image-container {
@@ -524,7 +568,7 @@
   transform: scale(1.05);
 }
 
-/* Video Styles */
+/* Enhanced Video Styles */
 .video-container {
   position: relative;
   width: 100%;
@@ -539,22 +583,77 @@
   border-radius: 0;
 }
 
-.video-overlay {
+.video-controls {
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 1;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  padding: 20px 15px 10px;
+  opacity: 0;
   transition: opacity 0.3s ease;
 }
 
-.video-container.playing .video-overlay {
-  opacity: 0;
+.video-container:hover .video-controls {
+  opacity: 1;
+}
+
+.video-progress {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.video-progress-bar {
+  height: 100%;
+  background: var(--accent-color);
+  border-radius: 2px;
+  width: 0%;
+}
+
+.video-control-buttons {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.video-control-buttons .btn {
+  background: none;
+  border: none;
+  color: white;
+  padding: 5px;
+  font-size: 1.2rem;
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.volume-slider {
+  width: 80px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.volume-level {
+  height: 100%;
+  background: white;
+  border-radius: 2px;
+  width: 100%;
+}
+
+.video-time {
+  color: white;
+  font-size: 0.9rem;
+  margin-left: auto;
 }
 
 .play-indicator {
@@ -775,7 +874,7 @@
   }
   
   .card-media {
-    height: 200px;
+    height: 280px;
   }
   
   .stat-number {
@@ -787,6 +886,19 @@
     height: 50px;
     font-size: 1.2rem;
   }
+
+  .video-controls {
+    padding: 15px 10px 8px;
+  }
+
+  .video-control-buttons .btn {
+    font-size: 1rem;
+    padding: 3px;
+  }
+
+  .volume-control {
+    display: none;
+  }
 }
 
 @media (max-width: 576px) {
@@ -795,7 +907,7 @@
   }
   
   .card-media {
-    height: 180px;
+    height: 240px;
   }
   
   .article-stats {
@@ -817,6 +929,10 @@
     padding: 0;
     justify-content: center;
   }
+
+  .brand-name {
+    font-size: 2.5rem;
+  }
 }
 
 @media (max-width: 400px) {
@@ -827,6 +943,10 @@
   .floating-actions {
     bottom: 0.5rem;
     right: 0.5rem;
+  }
+
+  .card-media {
+    height: 200px;
   }
 }
 
@@ -898,6 +1018,16 @@
   border-top: none;
   padding: 0 1.5rem 1.5rem;
 }
+
+/* ===== TOAST STYLES ===== */
+.toast {
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+}
+
+.toast-header {
+  border-radius: 10px 10px 0 0;
+}
 </style>
 
 <script>
@@ -909,14 +1039,21 @@ const loadThreshold = 300; // pixels from bottom to trigger load
 
 // Video Observers
 const videoObservers = new Map();
+const fullscreenMedia = {
+  element: null,
+  type: null,
+  originalParent: null,
+  originalIndex: null
+};
 
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
   initializeInfiniteScroll();
-  initializeVideoAutoplay();
+  initializeVideoPlayers();
   initializeAnimations();
   initializeFloatingButtons();
   initializeSearch();
+  initializeSuggestionForm();
 });
 
 // ===== INFINITE SCROLL =====
@@ -964,6 +1101,7 @@ async function loadMoreArticles() {
         setTimeout(() => {
           articleElement.classList.add('animate-in');
           initializeVideoForArticle(articleElement, article);
+          initializeMediaFullscreen(articleElement);
         }, 100);
       });
       
@@ -997,9 +1135,26 @@ function generateArticleCard(article) {
                 <source src="${video.file_path}" type="video/mp4">
                 Votre navigateur ne supporte pas la lecture vidéo.
               </video>
-              <div class="video-overlay">
-                <div class="play-icon">
-                  <i class="bi bi-play-fill"></i>
+              <div class="video-controls">
+                <div class="video-progress">
+                  <div class="video-progress-bar"></div>
+                </div>
+                <div class="video-control-buttons">
+                  <button class="btn play-pause-btn">
+                    <i class="bi bi-play-fill"></i>
+                  </button>
+                  <div class="volume-control">
+                    <button class="btn volume-btn">
+                      <i class="bi bi-volume-up-fill"></i>
+                    </button>
+                    <div class="volume-slider">
+                      <div class="volume-level" style="width: 100%"></div>
+                    </div>
+                  </div>
+                  <div class="video-time">0:00 / 0:00</div>
+                  <button class="btn fullscreen-btn">
+                    <i class="bi bi-arrows-fullscreen"></i>
+                  </button>
                 </div>
               </div>
               <div class="play-indicator">
@@ -1007,14 +1162,18 @@ function generateArticleCard(article) {
               </div>
             </div>
           ` : imageUrl ? `
-            <a href="/articles/${article.id}" class="article-image-link">
-              <div class="image-container">
-                <img src="${imageUrl}" 
-                    class="article-image" 
-                    alt="Image article ${article.title}"
-                    loading="lazy">
+            <div class="image-container media-clickable">
+              <img src="${imageUrl}" 
+                  class="article-image" 
+                  alt="Image article ${article.title}"
+                  loading="lazy"
+                  data-media-src="${imageUrl}">
+              <div class="video-play-overlay d-none">
+                <div class="play-icon">
+                  <i class="bi bi-arrows-fullscreen"></i>
+                </div>
               </div>
-            </a>
+            </div>
           ` : `
             <div class="article-image-placeholder">
               <div class="placeholder-content">
@@ -1110,50 +1269,258 @@ function showError(message) {
   }, 5000);
 }
 
-// ===== VIDEO AUTOPLAY =====
-function initializeVideoAutoplay() {
-  // Initialize for existing articles
+// ===== ENHANCED VIDEO PLAYERS =====
+function initializeVideoPlayers() {
   document.querySelectorAll('.video-container').forEach(container => {
-    initializeVideoObserver(container);
+    initializeVideoPlayer(container);
   });
+  
+  initializeMediaFullscreen();
 }
 
-function initializeVideoForArticle(articleElement, article) {
-  const videoContainer = articleElement.querySelector('.video-container');
-  if (videoContainer) {
-    initializeVideoObserver(videoContainer);
+function initializeVideoPlayer(container) {
+  const video = container.querySelector('video');
+  const playPauseBtn = container.querySelector('.play-pause-btn');
+  const volumeBtn = container.querySelector('.volume-btn');
+  const volumeSlider = container.querySelector('.volume-slider');
+  const volumeLevel = container.querySelector('.volume-level');
+  const progressBar = container.querySelector('.video-progress-bar');
+  const videoTime = container.querySelector('.video-time');
+  const fullscreenBtn = container.querySelector('.fullscreen-btn');
+  
+  if (!video) return;
+
+  // Play/Pause
+  playPauseBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    togglePlayPause(video, playPauseBtn);
+  });
+
+  // Volume control
+  volumeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleMute(video, volumeBtn, volumeLevel);
+  });
+
+  volumeSlider.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const rect = volumeSlider.getBoundingClientRect();
+    const percent = (e.clientX - rect.left) / rect.width;
+    setVolume(video, percent, volumeBtn, volumeLevel);
+  });
+
+  // Progress bar
+  container.querySelector('.video-progress').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const percent = (e.clientX - rect.left) / rect.width;
+    video.currentTime = percent * video.duration;
+  });
+
+  // Fullscreen
+  fullscreenBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    enterFullscreen(container, video);
+  });
+
+  // Video events
+  video.addEventListener('loadedmetadata', () => {
+    updateTimeDisplay(video, videoTime);
+  });
+
+  video.addEventListener('timeupdate', () => {
+    const percent = (video.currentTime / video.duration) * 100;
+    progressBar.style.width = percent + '%';
+    updateTimeDisplay(video, videoTime);
+  });
+
+  video.addEventListener('ended', () => {
+    playPauseBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+  });
+
+  // Auto-play when visible
+  initializeVideoObserver(container);
+}
+
+function togglePlayPause(video, button) {
+  if (video.paused) {
+    video.play().then(() => {
+      button.innerHTML = '<i class="bi bi-pause-fill"></i>';
+    }).catch(e => {
+      console.log('Play prevented:', e);
+    });
+  } else {
+    video.pause();
+    button.innerHTML = '<i class="bi bi-play-fill"></i>';
   }
 }
 
-function initializeVideoObserver(videoContainer) {
-  const video = videoContainer.querySelector('video');
+function toggleMute(video, button, volumeLevel) {
+  video.muted = !video.muted;
+  button.innerHTML = video.muted ? 
+    '<i class="bi bi-volume-mute-fill"></i>' : 
+    '<i class="bi bi-volume-up-fill"></i>';
+  volumeLevel.style.width = video.muted ? '0%' : (video.volume * 100) + '%';
+}
+
+function setVolume(video, percent, button, volumeLevel) {
+  video.volume = percent;
+  video.muted = percent === 0;
+  button.innerHTML = percent === 0 ? 
+    '<i class="bi bi-volume-mute-fill"></i>' : 
+    '<i class="bi bi-volume-up-fill"></i>';
+  volumeLevel.style.width = (percent * 100) + '%';
+}
+
+function updateTimeDisplay(video, timeElement) {
+  const currentTime = formatTime(video.currentTime);
+  const duration = formatTime(video.duration);
+  timeElement.textContent = `${currentTime} / ${duration}`;
+}
+
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function enterFullscreen(container, video) {
+  if (!document.fullscreenElement) {
+    if (container.requestFullscreen) {
+      container.requestFullscreen();
+    } else if (container.webkitRequestFullscreen) {
+      container.webkitRequestFullscreen();
+    } else if (container.msRequestFullscreen) {
+      container.msRequestFullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  }
+}
+
+function initializeVideoObserver(container) {
+  const video = container.querySelector('video');
   if (!video) return;
 
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
-          // Video is in viewport
-          videoContainer.classList.add('playing');
-          video.play().catch(e => {
-            console.log('Autoplay prevented:', e);
-            videoContainer.classList.remove('playing');
-          });
+          // Video is in viewport - play muted
+          if (video.muted) {
+            video.play().catch(e => {
+              console.log('Autoplay prevented:', e);
+            });
+          }
+          container.classList.add('playing');
         } else {
           // Video is out of viewport
           video.pause();
-          videoContainer.classList.remove('playing');
+          container.classList.remove('playing');
         }
       });
     },
     {
-      threshold: 0.5, // 50% of video must be visible
-      rootMargin: '0px 0px -100px 0px' // Stop playing when 100px from bottom
+      threshold: 0.5,
+      rootMargin: '0px 0px -100px 0px'
     }
   );
 
-  observer.observe(videoContainer);
-  videoObservers.set(videoContainer, observer);
+  observer.observe(container);
+  videoObservers.set(container, observer);
+}
+
+// ===== MEDIA FULLSCREEN =====
+function initializeMediaFullscreen(articleElement = null) {
+  const elements = articleElement ? 
+    articleElement.querySelectorAll('.media-clickable, .video-container') : 
+    document.querySelectorAll('.media-clickable, .video-container');
+  
+  elements.forEach(element => {
+    element.addEventListener('click', function(e) {
+      if (e.target.closest('.video-controls') || e.target.closest('.video-control-buttons')) {
+        return; // Don't trigger fullscreen if clicking controls
+      }
+      
+      if (this.classList.contains('video-container')) {
+        // Video fullscreen
+        const video = this.querySelector('video');
+        openMediaFullscreen(video, 'video');
+      } else {
+        // Image fullscreen
+        const img = this.querySelector('img');
+        openMediaFullscreen(img, 'image');
+      }
+    });
+  });
+}
+
+function openMediaFullscreen(mediaElement, type) {
+  // Create fullscreen overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'media-fullscreen';
+  overlay.innerHTML = `
+    <div class="fullscreen-controls">
+      <button class="btn btn-sm close-fullscreen">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+  `;
+  
+  // Clone the media element
+  const mediaClone = mediaElement.cloneNode(true);
+  mediaClone.style.maxWidth = '95%';
+  mediaClone.style.maxHeight = '95%';
+  mediaClone.style.objectFit = 'contain';
+  
+  if (type === 'video') {
+    mediaClone.controls = true;
+    mediaClone.autoplay = true;
+    mediaClone.currentTime = mediaElement.currentTime;
+  }
+  
+  overlay.appendChild(mediaClone);
+  document.body.appendChild(overlay);
+  
+  // Close fullscreen
+  const closeBtn = overlay.querySelector('.close-fullscreen');
+  closeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeMediaFullscreen(overlay, mediaElement, mediaClone, type);
+  });
+  
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      closeMediaFullscreen(overlay, mediaElement, mediaClone, type);
+    }
+  });
+  
+  // Escape key to close
+  const escapeHandler = (e) => {
+    if (e.key === 'Escape') {
+      closeMediaFullscreen(overlay, mediaElement, mediaClone, type);
+      document.removeEventListener('keydown', escapeHandler);
+    }
+  };
+  document.addEventListener('keydown', escapeHandler);
+}
+
+function closeMediaFullscreen(overlay, originalMedia, clonedMedia, type) {
+  if (type === 'video') {
+    originalMedia.currentTime = clonedMedia.currentTime;
+  }
+  overlay.remove();
+}
+
+// ===== VIDEO INITIALIZATION FOR NEW ARTICLES =====
+function initializeVideoForArticle(articleElement, article) {
+  const videoContainer = articleElement.querySelector('.video-container');
+  if (videoContainer) {
+    initializeVideoPlayer(videoContainer);
+  }
+  initializeMediaFullscreen(articleElement);
 }
 
 // ===== ANIMATIONS =====
@@ -1216,26 +1583,8 @@ function initializeSearch() {
   }
 }
 
-// ===== UTILITY FUNCTIONS =====
-function throttle(func, limit) {
-  let inThrottle;
-  return function() {
-    const args = arguments;
-    const context = this;
-    if (!inThrottle) {
-      func.apply(context, args);
-      inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
-    }
-  }
-}
-
-function scrollToTop() {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// Suggestion form handling
-document.addEventListener('DOMContentLoaded', function() {
+// ===== SUGGESTION FORM =====
+function initializeSuggestionForm() {
   const suggestionForm = document.getElementById('suggestionForm');
   if (suggestionForm) {
     suggestionForm.addEventListener('submit', function(e) {
@@ -1258,7 +1607,10 @@ document.addEventListener('DOMContentLoaded', function() {
           const modal = bootstrap.Modal.getInstance(document.getElementById('suggestionModal'));
           modal.hide();
           
-          showSuccess('Votre suggestion a été envoyée avec succès !');
+          // Show success toast
+          const toast = new bootstrap.Toast(document.getElementById('successToast'));
+          toast.show();
+          
           this.reset();
         } else {
           showError('Erreur lors de l\'envoi de la suggestion');
@@ -1270,21 +1622,30 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
   }
-});
-
-function showSuccess(message) {
-  const toast = document.createElement('div');
-  toast.className = 'alert alert-success position-fixed top-0 end-0 m-3';
-  toast.style.zIndex = '1060';
-  toast.innerHTML = `
-    <i class="bi bi-check-circle me-2"></i>
-    ${message}
-  `;
-  document.body.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.remove();
-  }, 5000);
 }
+
+// ===== UTILITY FUNCTIONS =====
+function throttle(func, limit) {
+  let inThrottle;
+  return function() {
+    const args = arguments;
+    const context = this;
+    if (!inThrottle) {
+      func.apply(context, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  }
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Initialize tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl)
+});
 </script>
 @endsection
