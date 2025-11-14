@@ -137,6 +137,8 @@
             @php
                 $mainVideo = $article->media->where('type', 'video')->first();
                 $mainImage = $article->image_path;
+                $hasVideo = $mainVideo ? true : false;
+                $hasImage = $mainImage ? true : false;
             @endphp
 
             @if($mainVideo)
@@ -182,51 +184,76 @@
                     {!! $article->content !!}
                 </div>
 
-                {{-- Media Gallery --}}
+                {{-- Enhanced Media Gallery --}}
                 @if($article->media->count() > 0)
                     <div class="media-gallery mb-5">
                         <h3 class="h4 mb-4 text-gradient text-center">
                             <i class="bi bi-images me-2"></i>Médias associés
                         </h3>
-                        <div class="row g-3">
-                            @foreach ($article->media as $m)
-                                <div class="col-6 col-sm-4 col-lg-3">
-                                    <div class="media-card rounded-3 overflow-hidden shadow-sm border-0 animate-scale-in hover-scale">
+                        <div class="row g-4">
+                            @foreach ($article->media as $index => $m)
+                                <div class="col-12 col-sm-6 col-lg-4">
+                                    <div class="media-card rounded-4 overflow-hidden shadow-lg border-0 animate-scale-in hover-scale" 
+                                         data-aos="fade-up" data-aos-delay="{{ $index * 100 }}">
                                         @if ($m->isImage())
-                                            <div class="image-ratio-container">
+                                            <div class="enhanced-image-container">
                                                 <img src="{{ $m->file_path }}"
-                                                     class="media-item cursor-zoom"
-                                                     alt="Média de l'article"
+                                                     class="enhanced-media-item cursor-zoom"
+                                                     alt="Média de l'article {{ $article->title }}"
                                                      onclick="openLightbox('{{ $m->file_path }}', '{{ $article->title }}')"
                                                      loading="lazy">
+                                                <div class="media-overlay">
+                                                    <div class="media-actions">
+                                                        <button class="btn btn-light btn-sm rounded-pill hover-lift" 
+                                                                onclick="openLightbox('{{ $m->file_path }}', '{{ $article->title }}')">
+                                                            <i class="bi bi-zoom-in me-1"></i>Agrandir
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         @elseif ($m->isVideo())
-                                            <div class="video-thumbnail-container">
-                                                <div class="image-ratio-container">
+                                            <div class="enhanced-video-container">
+                                                <div class="enhanced-image-container">
                                                     <img src="{{ $article->image_path ?? asset('img/video-placeholder.jpg') }}"
-                                                         class="media-item cursor-pointer"
-                                                         alt="Vidéo de l'article"
+                                                         class="enhanced-media-item cursor-pointer"
+                                                         alt="Vidéo de l'article {{ $article->title }}"
                                                          onclick="playVideo('{{ $m->file_path }}')"
                                                          loading="lazy">
                                                     <div class="video-play-overlay">
-                                                        <div class="play-icon-sm">
+                                                        <div class="play-icon-lg">
                                                             <i class="bi bi-play-fill"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div class="media-overlay">
+                                                        <div class="media-actions">
+                                                            <button class="btn btn-light btn-sm rounded-pill hover-lift" 
+                                                                    onclick="playVideo('{{ $m->file_path }}')">
+                                                                <i class="bi bi-play-fill me-1"></i>Lire
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         @elseif ($m->isAudio())
-                                            <div class="audio-container p-3 bg-light d-flex align-items-center rounded-3">
-                                                <audio controls class="w-100">
-                                                    <source src="{{ $m->file_path }}" type="{{ $m->mime_type }}">
-                                                    Votre navigateur ne supporte pas la lecture audio.
-                                                </audio>
+                                            <div class="audio-container p-4 bg-gradient-primary text-white rounded-4">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="bi bi-music-note-beamed display-6 me-3"></i>
+                                                    <div class="flex-grow-1">
+                                                        <h6 class="mb-2">Fichier audio</h6>
+                                                        <audio controls class="w-100 audio-player">
+                                                            <source src="{{ $m->file_path }}" type="{{ $m->mime_type }}">
+                                                            Votre navigateur ne supporte pas la lecture audio.
+                                                        </audio>
+                                                    </div>
+                                                </div>
                                             </div>
                                         @else
-                                            <div class="file-container p-3 bg-light d-flex align-items-center justify-content-center rounded-3">
+                                            <div class="file-container p-4 bg-light rounded-4 text-center">
+                                                <i class="bi bi-file-earmark-text display-4 text-primary mb-3"></i>
+                                                <h6 class="mb-2">Document</h6>
                                                 <a href="{{ $m->file_path }}" 
                                                    target="_blank" 
-                                                   class="btn btn-outline-primary hover-lift w-100">
+                                                   class="btn btn-primary hover-lift w-100">
                                                     <i class="bi bi-download me-2"></i>Télécharger
                                                 </a>
                                             </div>
@@ -297,7 +324,7 @@
                 </div>
             </div>
 
-            {{-- Share Modal --}}
+            {{-- Enhanced Share Modal --}}
             <div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content border-0 shadow-lg">
@@ -311,73 +338,131 @@
                             @php
                                 $url = urlencode(request()->fullUrl());
                                 $title = urlencode($article->title);
-                                $image = $article->image_path ? urlencode($article->image_path) : '';
-                                $description = urlencode(Str::limit(strip_tags($article->content), 150));
-                                $video = $article->media->where('type', 'video')->first();
-                                $hasVideo = $video ? true : false;
-                                $videoUrl = $video ? urlencode($video->file_path) : '';
+                                $content = $article->content ? Str::limit(strip_tags($article->content), 150) : '';
+                                $description = urlencode($content);
+                                $image = '';
+                                if ($article->image_path) {
+                                    $image = urlencode($article->image_path);
+                                }
+                                
+                                $video = null;
+                                if ($article->media) {
+                                    $video = $article->media->where('type', 'video')->first();
+                                }
+                                $hasVideo = (bool) $video;
+                                $videoUrl = '';
+                                if ($video) {
+                                    $videoUrl = urlencode($video->file_path);
+                                }
+                                
+                                // WhatsApp message with enhanced formatting
+                                $whatsappContent = $article->content ? Str::limit(strip_tags($article->content), 200) : 'Découvrez cette publication intéressante';
+                                $whatsappMessage = urlencode("📢 *{$article->title}*
+
+{$whatsappContent}
+
+🔗 " . request()->fullUrl() . "
+
+📱 Partagé via FlashPost");
                             @endphp
                             
                             <div class="row g-3">
+                                {{-- WhatsApp --}}
                                 <div class="col-6 col-sm-4">
-                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" style="background:#1877F2" 
-                                       href="https://www.facebook.com/sharer/sharer.php?u={{ $url }}&picture={{ $image }}&title={{ $title }}&description={{ $description }}"
-                                       target="_blank">
-                                        <i class="fab fa-facebook-f fa-lg"></i>
-                                        <span class="d-block mt-1 small">Facebook</span>
+                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" 
+                                       style="background:#25D366" 
+                                       href="https://wa.me/?text={{ $whatsappMessage }}"
+                                       target="_blank"
+                                       onclick="trackShare('whatsapp')">
+                                        <i class="fab fa-whatsapp fa-2x mb-2"></i>
+                                        <span class="d-block fw-bold">WhatsApp</span>
+                                        <small class="opacity-75">Partager avec contacts</small>
                                     </a>
                                 </div>
                                 
+                                {{-- Facebook --}}
                                 <div class="col-6 col-sm-4">
-                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" style="background:#000000" 
+                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" 
+                                       style="background:#1877F2" 
+                                       href="https://www.facebook.com/sharer/sharer.php?u={{ $url }}&quote={{ $title }}"
+                                       target="_blank"
+                                       onclick="trackShare('facebook')">
+                                        <i class="fab fa-facebook-f fa-2x mb-2"></i>
+                                        <span class="d-block fw-bold">Facebook</span>
+                                        <small class="opacity-75">Partager sur Facebook</small>
+                                    </a>
+                                </div>
+                                
+                                {{-- Twitter --}}
+                                <div class="col-6 col-sm-4">
+                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" 
+                                       style="background:#000000" 
                                        href="https://twitter.com/intent/tweet?url={{ $url }}&text={{ $title }}&hashtags=FlashPost"
-                                       target="_blank">
-                                        <i class="fab fa-x-twitter fa-lg"></i>
-                                        <span class="d-block mt-1 small">Twitter</span>
+                                       target="_blank"
+                                       onclick="trackShare('twitter')">
+                                        <i class="fab fa-x-twitter fa-2x mb-2"></i>
+                                        <span class="d-block fw-bold">Twitter</span>
+                                        <small class="opacity-75">Tweet cette publication</small>
                                     </a>
                                 </div>
                                 
+                                {{-- Telegram --}}
                                 <div class="col-6 col-sm-4">
-                                    @if($hasVideo)
-                                        <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" style="background:#25D366" 
-                                           href="https://wa.me/?text={{ $title }}%0A%0A🎥 Vidéo disponible : {{ $url }}"
-                                           target="_blank">
-                                            <i class="fab fa-whatsapp fa-lg"></i>
-                                            <span class="d-block mt-1 small">WhatsApp</span>
-                                        </a>
-                                    @else
-                                        <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" style="background:#25D366" 
-                                           href="https://wa.me/?text={{ $title }}%0A%0A{{ $url }}"
-                                           target="_blank">
-                                            <i class="fab fa-whatsapp fa-lg"></i>
-                                            <span class="d-block mt-1 small">WhatsApp</span>
-                                        </a>
-                                    @endif
-                                </div>
-                                
-                                <div class="col-6 col-sm-4">
-                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" style="background:#0088cc" 
+                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" 
+                                       style="background:#0088cc" 
                                        href="https://t.me/share/url?url={{ $url }}&text={{ $title }}"
-                                       target="_blank">
-                                        <i class="fab fa-telegram fa-lg"></i>
-                                        <span class="d-block mt-1 small">Telegram</span>
+                                       target="_blank"
+                                       onclick="trackShare('telegram')">
+                                        <i class="fab fa-telegram fa-2x mb-2"></i>
+                                        <span class="d-block fw-bold">Telegram</span>
+                                        <small class="opacity-75">Partager sur Telegram</small>
                                     </a>
                                 </div>
                                 
+                                {{-- LinkedIn --}}
                                 <div class="col-6 col-sm-4">
-                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" style="background:#0A66C2" 
+                                    <a class="share-platform-btn btn btn-lg w-100 text-white hover-lift" 
+                                       style="background:#0A66C2" 
                                        href="https://www.linkedin.com/sharing/share-offsite/?url={{ $url }}"
-                                       target="_blank">
-                                        <i class="fab fa-linkedin-in fa-lg"></i>
-                                        <span class="d-block mt-1 small">LinkedIn</span>
+                                       target="_blank"
+                                       onclick="trackShare('linkedin')">
+                                        <i class="fab fa-linkedin-in fa-2x mb-2"></i>
+                                        <span class="d-block fw-bold">LinkedIn</span>
+                                        <small class="opacity-75">Partager professionnellement</small>
                                     </a>
                                 </div>
                                 
+                                {{-- Copy Link --}}
                                 <div class="col-6 col-sm-4">
-                                    <button class="share-platform-btn btn btn-lg w-100 text-white hover-lift copy-link-btn" style="background:#6c757d">
-                                        <i class="fas fa-copy fa-lg"></i>
-                                        <span class="d-block mt-1 small">Copier le lien</span>
+                                    <button class="share-platform-btn btn btn-lg w-100 text-white hover-lift copy-link-btn" 
+                                            style="background:#6c757d"
+                                            onclick="copyToClipboard()">
+                                        <i class="fas fa-copy fa-2x mb-2"></i>
+                                        <span class="d-block fw-bold">Copier le lien</span>
+                                        <small class="opacity-75">Coller où vous voulez</small>
                                     </button>
+                                </div>
+                            </div>
+
+                            {{-- Share Preview --}}
+                            <div class="share-preview mt-4 p-3 bg-light rounded-3">
+                                <div class="d-flex align-items-center">
+                                    @if($article->image_path)
+                                        <img src="{{ $article->image_path }}" 
+                                             class="share-preview-image rounded-2 me-3"
+                                             alt="Preview"
+                                             style="width: 60px; height: 60px; object-fit: cover;">
+                                    @else
+                                        <div class="share-preview-placeholder bg-primary bg-opacity-10 rounded-2 d-flex align-items-center justify-content-center me-3"
+                                             style="width: 60px; height: 60px;">
+                                            <i class="bi bi-file-text text-primary"></i>
+                                        </div>
+                                    @endif
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 fw-bold">{{ Str::limit($article->title, 50) }}</h6>
+                                        <p class="mb-0 text-muted small">{{ Str::limit(strip_tags($article->content), 80) }}</p>
+                                        <small class="text-primary">{{ request()->getHost() }}</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -634,7 +719,7 @@
     </div>
 </div>
 
-<!-- Lightbox Modal -->
+<!-- Enhanced Lightbox Modal -->
 <div id="lightbox" class="lightbox">
     <div class="lightbox-content">
         <span class="lightbox-close" onclick="closeLightbox()">
@@ -655,10 +740,18 @@
         <div class="lightbox-counter">
             <span id="lightboxCounter">1/1</span>
         </div>
+        <div class="lightbox-actions">
+            <button class="lightbox-action-btn" onclick="downloadMedia()">
+                <i class="bi bi-download"></i>
+            </button>
+            <button class="lightbox-action-btn" onclick="shareMedia()">
+                <i class="bi bi-share"></i>
+            </button>
+        </div>
     </div>
 </div>
 
-<!-- Video Lightbox Modal -->
+<!-- Enhanced Video Lightbox Modal -->
 <div id="videoLightbox" class="lightbox">
     <div class="lightbox-content video-lightbox-content">
         <span class="lightbox-close" onclick="closeVideoLightbox()">
@@ -668,6 +761,25 @@
             <video controls class="lightbox-video" id="lightboxVideo">
                 Votre navigateur ne supporte pas la lecture de vidéos.
             </video>
+        </div>
+        <div class="video-lightbox-actions">
+            <button class="btn btn-primary hover-lift" onclick="shareVideo()">
+                <i class="bi bi-share me-2"></i>Partager cette vidéo
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Success Toast -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="successToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <strong class="me-auto">Succès</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body bg-light">
+            Lien copié dans le presse-papiers !
         </div>
     </div>
 </div>
@@ -687,6 +799,7 @@
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.12);
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.2);
 }
 
 /* ===== FLOATING ACTIONS ===== */
@@ -703,22 +816,31 @@
 .floating-actions .btn {
   border-radius: 50px;
   padding: 1rem;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-xl);
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 60px;
   height: 60px;
+  transition: var(--transition);
 }
 
 .share-floating-btn {
   animation: pulse 2s infinite;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  border: none;
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  0%, 100% { 
+    transform: scale(1);
+    box-shadow: var(--shadow-xl);
+  }
+  50% { 
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(67, 97, 238, 0.6);
+  }
 }
 
 /* ===== TYPOGRAPHY ===== */
@@ -739,123 +861,32 @@
   color: var(--accent-color) !important;
 }
 
-/* ===== BREADCRUMB ===== */
-.breadcrumb {
-  background: transparent;
-  padding: 0;
+/* ===== ENHANCED MEDIA GALLERY ===== */
+.media-gallery .row {
+  animation: fadeInUp 0.8s ease-out;
 }
 
-.breadcrumb-item a {
-  color: var(--primary-color);
-  text-decoration: none;
-  transition: var(--transition);
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.breadcrumb-item a:hover {
-  color: var(--secondary-color);
-}
-
-/* ===== AVATARS ===== */
-.avatar-lg {
-  width: 60px;
-  height: 60px;
-}
-
-.avatar-sm {
-  width: 35px;
-  height: 35px;
-}
-
-.avatar-placeholder {
-  font-weight: 600;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* ===== ARTICLE STATS ===== */
-.article-stats {
-  padding: 1rem 0;
-}
-
-.stat-item {
-  padding: 0.5rem 1rem;
-  background: rgba(67, 97, 238, 0.05);
-  border-radius: 10px;
-  transition: var(--transition);
-}
-
-.stat-item:hover {
-  background: rgba(67, 97, 238, 0.1);
-  transform: translateY(-2px);
-}
-
-/* ===== MEDIA CONTAINERS ===== */
-.main-media-container {
-  border-radius: 20px;
-  overflow: hidden;
-}
-
-.video-player-container {
+.enhanced-image-container {
   position: relative;
   width: 100%;
-  padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
-  background: #000;
-}
-
-.main-video-player {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-.video-controls-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  background: rgba(0, 0, 0, 0.3);
-}
-
-.video-player-container:hover .video-controls-overlay {
-  opacity: 1;
-}
-
-.control-buttons {
-  display: flex;
-  gap: 1rem;
-}
-
-.control-btn {
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.image-ratio-container {
-  position: relative;
-  width: 100%;
-  padding-bottom: 66.67%; /* Ratio 3:2 */
+  padding-bottom: 75%; /* 4:3 Aspect Ratio for better mobile display */
   overflow: hidden;
   background: #f8f9fa;
+  border-radius: 16px;
 }
 
-.article-main-image,
-.media-item {
+.enhanced-media-item {
   position: absolute;
   top: 0;
   left: 0;
@@ -863,132 +894,525 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
-  transition: var(--transition);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 16px;
 }
 
-/* ===== VIDEO THUMBNAILS ===== */
-.video-thumbnail-container {
-  position: relative;
-  cursor: pointer;
-}
-
-.video-play-overlay {
+.media-overlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.3);
+  background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.7) 100%);
+  opacity: 0;
+  transition: var(--transition);
+  border-radius: 16px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
+  padding: 1rem;
+}
+
+.media-card:hover .media-overlay {
   opacity: 1;
-  transition: opacity 0.3s ease;
 }
 
-.video-thumbnail-container:hover .video-play-overlay {
-  opacity: 0.8;
+.media-card:hover .enhanced-media-item {
+  transform: scale(1.05);
 }
 
-.play-icon-sm {
-  width: 40px;
-  height: 40px;
-  background: rgba(255, 123, 0, 0.9);
+.media-actions {
+  transform: translateY(20px);
+  transition: var(--transition);
+}
+
+.media-card:hover .media-actions {
+  transform: translateY(0);
+}
+
+/* Enhanced Video Play Button */
+.play-icon-lg {
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 123, 0, 0.95);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 1rem;
+  font-size: 2rem;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: var(--transition);
+  backdrop-filter: blur(10px);
+  border: 3px solid rgba(255, 255, 255, 0.3);
 }
 
-/* ===== CONTENT BODY ===== */
-.content-body {
-  font-size: clamp(1rem, 2.5vw, 1.1rem);
-  line-height: 1.7;
+.enhanced-video-container:hover .play-icon-lg {
+  background: rgba(255, 123, 0, 1);
+  transform: translate(-50%, -50%) scale(1.1);
 }
 
-.content-body img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm);
-}
-
-.content-body p {
-  margin-bottom: 1.5rem;
-}
-
-/* ===== ACTION BUTTONS ===== */
-.action-buttons {
-  padding: 2rem 0;
-  border-top: 2px solid #f8f9fa;
-  border-bottom: 2px solid #f8f9fa;
-}
-
-/* ===== RATING SECTION ===== */
-.rating-section {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-}
-
-.star-rating .btn {
+/* Audio Player Enhancement */
+.audio-container {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
   transition: var(--transition);
 }
 
-.star-rating .btn:hover {
-  transform: scale(1.2);
+.audio-container:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
 }
 
-/* ===== COMMENTS SECTION ===== */
-.comment-form-card {
-  border-radius: 15px;
+.audio-player {
+  border-radius: 25px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
 }
 
-.comment-card {
-  border-radius: 15px;
-  transition: var(--transition);
+.audio-player::-webkit-media-controls-panel {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
 }
 
-.comment-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md) !important;
-}
-
-.replies-container {
-  border-left-color: var(--primary-color) !important;
-}
-
-.reply-card {
-  border-radius: 10px;
-  transition: var(--transition);
-}
-
-.reply-card:hover {
-  transform: translateX(5px);
-}
-
-/* ===== SHARE BUTTONS ===== */
+/* Enhanced Share Modal */
 .share-platform-btn {
-  border-radius: 12px;
-  transition: var(--transition);
-  padding: 1rem 0.5rem;
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 1.5rem 0.5rem;
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.share-platform-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.share-platform-btn:hover::before {
+  left: 100%;
 }
 
 .share-platform-btn:hover {
-  transform: translateY(-5px) scale(1.05);
+  transform: translateY(-8px) scale(1.05);
+  box-shadow: var(--shadow-xl);
 }
 
-/* ===== ANIMATIONS ===== */
+.share-preview {
+  border: 2px solid #e9ecef;
+  transition: var(--transition);
+}
+
+.share-preview:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+/* Enhanced Lightbox */
+.lightbox {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.98);
+  backdrop-filter: blur(20px);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.lightbox.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: lightboxFadeIn 0.4s ease forwards;
+}
+
+@keyframes lightboxFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.lightbox-content {
+  position: relative;
+  width: 95%;
+  max-width: 1400px;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-lightbox-content {
+  max-width: 1000px;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.15);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  z-index: 10001;
+}
+
+.lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.1) rotate(90deg);
+}
+
+.lightbox-image-container {
+  position: relative;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-image {
+  max-width: 100%;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 20px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6);
+  animation: imageZoomIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes imageZoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.video-container {
+  width: 100%;
+  max-height: 85vh;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.lightbox-video {
+  width: 100%;
+  height: auto;
+  max-height: 85vh;
+  border-radius: 20px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6);
+}
+
+.lightbox-caption {
+  position: absolute;
+  bottom: -70px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  color: white;
+  font-size: 1.2rem;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  transform: translateY(-50%);
+  padding: 0 3rem;
+  z-index: 10000;
+}
+
+.lightbox-nav-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: none;
+  font-size: 1.8rem;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.lightbox-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.1);
+}
+
+.lightbox-counter {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  color: white;
+  font-size: 1.1rem;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 0.75rem 1.5rem;
+  border-radius: 25px;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 10000;
+}
+
+.lightbox-actions {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 1rem;
+  z-index: 10000;
+}
+
+.lightbox-action-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.lightbox-action-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.1);
+}
+
+.video-lightbox-actions {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+}
+
+/* ===== RESPONSIVE DESIGN ENHANCEMENTS ===== */
+@media (max-width: 768px) {
+  .container-fluid {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .floating-actions {
+    bottom: 1.5rem;
+    right: 1.5rem;
+  }
+  
+  .floating-actions .btn {
+    width: 55px;
+    height: 55px;
+  }
+  
+  .enhanced-image-container {
+    padding-bottom: 100%; /* Square aspect ratio for mobile */
+  }
+  
+  .media-gallery .row {
+    gap: 1rem !important;
+  }
+  
+  .media-card {
+    margin-bottom: 1rem;
+  }
+  
+  .play-icon-lg {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+  
+  .share-platform-btn {
+    padding: 1rem 0.5rem;
+  }
+  
+  .share-platform-btn i {
+    font-size: 1.5rem !important;
+  }
+  
+  .lightbox-content {
+    width: 98%;
+    max-height: 90vh;
+  }
+  
+  .lightbox-close {
+    top: 10px;
+    right: 10px;
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+  }
+  
+  .lightbox-nav {
+    padding: 0 1rem;
+  }
+  
+  .lightbox-nav-btn {
+    width: 55px;
+    height: 55px;
+    font-size: 1.5rem;
+  }
+  
+  .lightbox-counter {
+    top: 10px;
+    left: 10px;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+  }
+  
+  .lightbox-caption {
+    bottom: -60px;
+    font-size: 1rem;
+    padding: 1rem;
+  }
+  
+  .lightbox-actions {
+    bottom: 10px;
+    right: 10px;
+  }
+  
+  .lightbox-action-btn {
+    width: 45px;
+    height: 45px;
+  }
+}
+
+@media (max-width: 576px) {
+  .floating-actions {
+    bottom: 1rem;
+    right: 1rem;
+  }
+  
+  .floating-actions .btn {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .article-title {
+    font-size: 1.5rem;
+  }
+  
+  .media-gallery .row {
+    gap: 0.5rem !important;
+  }
+  
+  .col-12.col-sm-6.col-lg-4 {
+    padding: 0.25rem;
+  }
+  
+  .enhanced-image-container {
+    padding-bottom: 120%; /* Taller aspect ratio for better mobile viewing */
+  }
+  
+  .share-platform-btn {
+    padding: 0.75rem 0.25rem;
+  }
+  
+  .share-platform-btn span {
+    font-size: 0.875rem;
+  }
+  
+  .share-platform-btn small {
+    font-size: 0.75rem;
+  }
+  
+  .lightbox-nav-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 1.2rem;
+  }
+  
+  .lightbox-close {
+    width: 45px;
+    height: 45px;
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .floating-actions {
+    bottom: 0.5rem;
+    right: 0.5rem;
+  }
+  
+  .media-gallery .row {
+    gap: 0.25rem !important;
+  }
+  
+  .col-12.col-sm-6.col-lg-4 {
+    padding: 0.125rem;
+  }
+  
+  .share-platform-btn {
+    padding: 0.5rem 0.125rem;
+  }
+  
+  .share-platform-btn i {
+    font-size: 1.25rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+  
+  .share-platform-btn span {
+    font-size: 0.8rem;
+  }
+  
+  .share-platform-btn small {
+    display: none;
+  }
+}
+
+/* ===== ANIMATION ENHANCEMENTS ===== */
 .animate-fade-in {
-  animation: fadeIn 0.6s ease-in-out;
+  animation: fadeIn 0.8s ease-in-out;
 }
 
 .animate-slide-up {
-  animation: slideUp 0.6s ease-out;
+  animation: slideUp 0.8s ease-out;
 }
 
 .animate-scale-in {
-  animation: scaleIn 0.5s ease-out;
+  animation: scaleIn 0.6s ease-out;
 }
 
 @keyframes fadeIn {
@@ -999,7 +1423,7 @@
 @keyframes slideUp {
   from { 
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(40px);
   }
   to { 
     opacity: 1;
@@ -1010,7 +1434,7 @@
 @keyframes scaleIn {
   from { 
     opacity: 0;
-    transform: scale(0.9);
+    transform: scale(0.8);
   }
   to { 
     opacity: 1;
@@ -1032,8 +1456,8 @@
 }
 
 .hover-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
 }
 
 .hover-primary:hover {
@@ -1041,7 +1465,7 @@
 }
 
 .focus-shadow:focus {
-  box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.25) !important;
+  box-shadow: 0 0 0 0.3rem rgba(67, 97, 238, 0.25) !important;
   border-color: var(--primary-color);
 }
 
@@ -1053,307 +1477,6 @@
   cursor: pointer;
 }
 
-/* ===== LIGHTBOX STYLES ===== */
-.lightbox {
-  display: none;
-  position: fixed;
-  z-index: 9999;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.95);
-  backdrop-filter: blur(10px);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.lightbox.active {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: lightboxFadeIn 0.3s ease forwards;
-}
-
-@keyframes lightboxFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.lightbox-content {
-  position: relative;
-  width: 95%;
-  max-width: 1200px;
-  max-height: 95vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.video-lightbox-content {
-  max-width: 900px;
-}
-
-.lightbox-close {
-  position: absolute;
-  top: -50px;
-  right: 0;
-  color: white;
-  font-size: 2rem;
-  cursor: pointer;
-  background: rgba(255, 255, 255, 0.1);
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.lightbox-close:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
-}
-
-.lightbox-image-container {
-  position: relative;
-  width: 100%;
-  max-height: 80vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.lightbox-image {
-  max-width: 100%;
-  max-height: 80vh;
-  object-fit: contain;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  animation: imageZoomIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes imageZoomIn {
-  from {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.video-container {
-  width: 100%;
-  max-height: 80vh;
-}
-
-.lightbox-video {
-  width: 100%;
-  height: auto;
-  max-height: 80vh;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-}
-
-.lightbox-caption {
-  position: absolute;
-  bottom: -60px;
-  left: 0;
-  width: 100%;
-  text-align: center;
-  color: white;
-  font-size: 1.1rem;
-  padding: 1rem;
-  background: rgba(0, 0, 0, 0.7);
-  border-radius: 8px;
-  backdrop-filter: blur(10px);
-}
-
-.lightbox-nav {
-  position: absolute;
-  top: 50%;
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  transform: translateY(-50%);
-  padding: 0 2rem;
-}
-
-.lightbox-nav-btn {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: none;
-  font-size: 1.5rem;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.lightbox-nav-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.1);
-}
-
-.lightbox-counter {
-  position: absolute;
-  top: -50px;
-  left: 0;
-  color: white;
-  font-size: 1rem;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  backdrop-filter: blur(10px);
-}
-
-/* ===== RESPONSIVE DESIGN ===== */
-@media (max-width: 768px) {
-  .container-fluid {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-  
-  .floating-actions {
-    bottom: 1.5rem;
-    right: 1.5rem;
-  }
-  
-  .floating-actions .btn {
-    width: 50px;
-    height: 50px;
-    padding: 0.875rem;
-  }
-  
-  .article-stats {
-    gap: 0.5rem;
-  }
-  
-  .stat-item {
-    padding: 0.5rem;
-    font-size: 0.875rem;
-  }
-  
-  .avatar-lg {
-    width: 50px;
-    height: 50px;
-  }
-  
-  .control-btn {
-    width: 50px;
-    height: 50px;
-  }
-  
-  .lightbox-content {
-    width: 98%;
-    max-height: 90vh;
-  }
-  
-  .lightbox-close {
-    top: 10px;
-    right: 10px;
-    width: 45px;
-    height: 45px;
-    font-size: 1.5rem;
-  }
-  
-  .lightbox-nav {
-    padding: 0 1rem;
-  }
-  
-  .lightbox-nav-btn {
-    width: 50px;
-    height: 50px;
-    font-size: 1.2rem;
-  }
-  
-  .lightbox-counter {
-    top: 10px;
-    left: 10px;
-  }
-  
-  .lightbox-caption {
-    bottom: -80px;
-    font-size: 1rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .floating-actions {
-    bottom: 1rem;
-    right: 1rem;
-  }
-  
-  .floating-actions .btn {
-    width: 45px;
-    height: 45px;
-  }
-  
-  .article-title {
-    font-size: 1.5rem;
-  }
-  
-  .content-body {
-    font-size: 1rem;
-  }
-  
-  .action-buttons .btn {
-    font-size: 0.875rem;
-    padding: 0.5rem 1rem;
-  }
-  
-  .comment-card .card-body {
-    padding: 1.5rem;
-  }
-  
-  .avatar-lg {
-    width: 45px;
-    height: 45px;
-  }
-  
-  .lightbox-nav-btn {
-    width: 45px;
-    height: 45px;
-    font-size: 1.1rem;
-  }
-  
-  .lightbox-close {
-    width: 40px;
-    height: 40px;
-    font-size: 1.2rem;
-  }
-}
-
-@media (max-width: 400px) {
-  .floating-actions {
-    bottom: 0.5rem;
-    right: 0.5rem;
-  }
-  
-  .article-stats {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-  
-  .stat-item {
-    width: 100%;
-    justify-content: flex-start;
-  }
-}
-
 /* ===== UTILITY CLASSES ===== */
 .text-break {
   word-wrap: break-word;
@@ -1362,10 +1485,7 @@
 
 .copy-link-btn.copied {
   background-color: #28a745 !important;
-}
-
-.empty-comments i {
-  animation: bounce 2s infinite;
+  animation: bounce 0.5s;
 }
 
 @keyframes bounce {
@@ -1379,10 +1499,39 @@
     transform: translateY(-5px);
   }
 }
+
+.empty-comments i {
+  animation: bounce 2s infinite;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Loading animation for images */
+.enhanced-media-item {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.enhanced-media-item[src] {
+  animation: none;
+}
 </style>
 
 <script>
-// ===== LIGHTBOX FUNCTIONALITY =====
+// ===== ENHANCED LIGHTBOX FUNCTIONALITY =====
 let currentLightboxIndex = 0;
 let lightboxImages = [];
 
@@ -1392,17 +1541,28 @@ function openLightbox(imageSrc, caption) {
   const captionText = document.getElementById('lightboxCaption');
   const counter = document.getElementById('lightboxCounter');
   
-  // Collect all clickable images
-  lightboxImages = Array.from(document.querySelectorAll('.cursor-zoom[src]'));
+  // Collect all clickable images from enhanced media gallery
+  lightboxImages = Array.from(document.querySelectorAll('.enhanced-media-item[src]'));
   currentLightboxIndex = lightboxImages.findIndex(img => img.src.includes(imageSrc));
   
-  // Show lightbox with animation
-  lightbox.classList.add('active');
+  if (currentLightboxIndex === -1) {
+    currentLightboxIndex = 0;
+  }
+  
+  // Show lightbox with enhanced animation
+  lightbox.style.display = 'flex';
+  setTimeout(() => {
+    lightbox.classList.add('active');
+  }, 10);
+  
   lightboxImg.src = imageSrc;
   captionText.innerHTML = caption || '';
   updateLightboxCounter();
   
   document.body.style.overflow = 'hidden';
+  
+  // Add keyboard event listeners
+  document.addEventListener('keydown', handleLightboxKeydown);
 }
 
 function closeLightbox() {
@@ -1411,9 +1571,20 @@ function closeLightbox() {
   
   setTimeout(() => {
     lightbox.style.display = 'none';
-  }, 300);
+  }, 400);
   
   document.body.style.overflow = 'auto';
+  document.removeEventListener('keydown', handleLightboxKeydown);
+}
+
+function handleLightboxKeydown(event) {
+  if (event.key === 'Escape') {
+    closeLightbox();
+  } else if (event.key === 'ArrowLeft') {
+    navigateLightbox(-1);
+  } else if (event.key === 'ArrowRight') {
+    navigateLightbox(1);
+  }
 }
 
 function navigateLightbox(direction) {
@@ -1430,15 +1601,17 @@ function navigateLightbox(direction) {
   const lightboxImg = document.getElementById('lightboxImage');
   const captionText = document.getElementById('lightboxCaption');
   
-  // Add fade transition
+  // Add smooth transition
   lightboxImg.style.opacity = '0';
+  lightboxImg.style.transform = 'scale(0.95)';
   
   setTimeout(() => {
     lightboxImg.src = lightboxImages[currentLightboxIndex].src;
     captionText.innerHTML = lightboxImages[currentLightboxIndex].alt || '';
     lightboxImg.style.opacity = '1';
+    lightboxImg.style.transform = 'scale(1)';
     updateLightboxCounter();
-  }, 200);
+  }, 300);
 }
 
 function updateLightboxCounter() {
@@ -1446,17 +1619,46 @@ function updateLightboxCounter() {
   counter.textContent = `${currentLightboxIndex + 1}/${lightboxImages.length}`;
 }
 
-// ===== VIDEO LIGHTBOX FUNCTIONALITY =====
+function downloadMedia() {
+  const lightboxImg = document.getElementById('lightboxImage');
+  const link = document.createElement('a');
+  link.href = lightboxImg.src;
+  link.download = 'flashpost-image.jpg';
+  link.click();
+}
+
+function shareMedia() {
+  const lightboxImg = document.getElementById('lightboxImage');
+  if (navigator.share) {
+    navigator.share({
+      title: '{{ $article->title }}',
+      text: '{{ Str::limit(strip_tags($article->content), 100) }}',
+      url: window.location.href,
+    })
+    .catch(console.error);
+  } else {
+    openShareModal();
+  }
+}
+
+// ===== ENHANCED VIDEO LIGHTBOX FUNCTIONALITY =====
 function playVideo(videoSrc) {
   const lightbox = document.getElementById('videoLightbox');
   const lightboxVideo = document.getElementById('lightboxVideo');
   
-  lightbox.classList.add('active');
+  lightbox.style.display = 'flex';
+  setTimeout(() => {
+    lightbox.classList.add('active');
+  }, 10);
+  
   lightboxVideo.src = videoSrc;
   lightboxVideo.load();
-  lightboxVideo.play();
+  lightboxVideo.play().catch(e => {
+    console.log('Autoplay prevented:', e);
+  });
   
   document.body.style.overflow = 'hidden';
+  document.addEventListener('keydown', handleVideoLightboxKeydown);
 }
 
 function closeVideoLightbox() {
@@ -1469,15 +1671,62 @@ function closeVideoLightbox() {
   setTimeout(() => {
     lightbox.style.display = 'none';
     lightboxVideo.src = '';
-  }, 300);
+  }, 400);
   
   document.body.style.overflow = 'auto';
+  document.removeEventListener('keydown', handleVideoLightboxKeydown);
 }
 
-// ===== SHARE MODAL FUNCTIONALITY =====
+function handleVideoLightboxKeydown(event) {
+  if (event.key === 'Escape') {
+    closeVideoLightbox();
+  }
+}
+
+function shareVideo() {
+  if (navigator.share) {
+    navigator.share({
+      title: '{{ $article->title }} - Vidéo',
+      text: '🎥 Regardez cette vidéo: {{ Str::limit(strip_tags($article->content), 100) }}',
+      url: window.location.href,
+    })
+    .catch(console.error);
+  } else {
+    openShareModal();
+  }
+}
+
+// ===== ENHANCED SHARE FUNCTIONALITY =====
 function openShareModal() {
   const shareModal = new bootstrap.Modal(document.getElementById('shareModal'));
   shareModal.show();
+}
+
+function trackShare(platform) {
+  // Analytics tracking would go here
+  console.log(`Shared on ${platform}`);
+}
+
+function copyToClipboard() {
+  const url = '{{ request()->fullUrl() }}';
+  navigator.clipboard.writeText(url).then(() => {
+    const copyBtn = document.querySelector('.copy-link-btn');
+    const originalHTML = copyBtn.innerHTML;
+    
+    copyBtn.innerHTML = '<i class="fas fa-check fa-2x mb-2"></i><span class="d-block fw-bold">Lien copié!</span><small class="opacity-75">Coller où vous voulez</small>';
+    copyBtn.classList.add('copied');
+    
+    // Show success toast
+    const toast = new bootstrap.Toast(document.getElementById('successToast'));
+    toast.show();
+    
+    setTimeout(() => {
+      copyBtn.innerHTML = originalHTML;
+      copyBtn.classList.remove('copied');
+    }, 3000);
+  }).catch(err => {
+    console.error('Failed to copy: ', err);
+  });
 }
 
 // ===== STAR RATING FUNCTIONALITY =====
@@ -1487,8 +1736,10 @@ function highlightStars(count) {
     const icon = star.querySelector('i');
     if (index < count) {
       icon.className = 'bi bi-star-fill text-warning';
+      star.style.transform = 'scale(1.1)';
     } else {
       icon.className = 'bi bi-star';
+      star.style.transform = 'scale(1)';
     }
   });
 }
@@ -1497,6 +1748,7 @@ function resetStars() {
   const stars = document.querySelectorAll('.star-btn');
   stars.forEach(star => {
     star.querySelector('i').className = 'bi bi-star';
+    star.style.transform = 'scale(1)';
   });
 }
 
@@ -1507,17 +1759,42 @@ function scrollToTop() {
 
 function scrollToComments() {
   const commentsSection = document.querySelector('.comments-section');
-  commentsSection.scrollIntoView({ behavior: 'smooth' });
+  commentsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ===== AUTO-RESIZE TEXTAREA =====
 function autoResize(textarea) {
   textarea.style.height = 'auto';
-  textarea.style.height = textarea.scrollHeight + 'px';
+  textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
 }
 
-// ===== INITIALIZATION =====
+// ===== ENHANCED INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', function() {
+  // Initialize all enhanced functionality
+  initializeEnhancedMedia();
+  initializeEventListeners();
+  initializeAnimations();
+});
+
+function initializeEnhancedMedia() {
+  // Lazy loading for enhanced media items
+  const lazyImages = document.querySelectorAll('.enhanced-media-item');
+  
+  const imageObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const img = entry.target;
+        img.src = img.dataset.src || img.src;
+        img.classList.remove('lazy');
+        imageObserver.unobserve(img);
+      }
+    });
+  });
+
+  lazyImages.forEach(img => imageObserver.observe(img));
+}
+
+function initializeEventListeners() {
   // Close lightboxes on outside click
   document.addEventListener('click', function(event) {
     const lightbox = document.getElementById('lightbox');
@@ -1532,50 +1809,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
-  // Keyboard navigation
-  document.addEventListener('keydown', function(event) {
-    const lightbox = document.getElementById('lightbox');
-    const videoLightbox = document.getElementById('videoLightbox');
-    
-    if (lightbox.classList.contains('active')) {
-      if (event.key === 'Escape') {
-        closeLightbox();
-      } else if (event.key === 'ArrowLeft') {
-        navigateLightbox(-1);
-      } else if (event.key === 'ArrowRight') {
-        navigateLightbox(1);
-      }
-    }
-    
-    if (videoLightbox.classList.contains('active') && event.key === 'Escape') {
-      closeVideoLightbox();
-    }
-  });
-  
-  // Copy link functionality
-  const copyLinkBtn = document.querySelector('.copy-link-btn');
-  if (copyLinkBtn) {
-    copyLinkBtn.addEventListener('click', function() {
-      navigator.clipboard.writeText('{{ request()->fullUrl() }}').then(() => {
-        const originalHTML = this.innerHTML;
-        this.innerHTML = '<i class="fas fa-check fa-lg"></i><span class="d-block mt-1 small">Lien copié</span>';
-        this.classList.add('copied');
-        
-        setTimeout(() => {
-          this.innerHTML = originalHTML;
-          this.classList.remove('copied');
-        }, 2000);
-      });
-    });
-  }
-  
-  // Video controls
+  // Video controls for main video
   const mainVideo = document.querySelector('.main-video-player');
   const playPauseBtn = document.querySelector('.play-pause-btn');
   const fullscreenBtn = document.querySelector('.fullscreen-btn');
   
   if (mainVideo && playPauseBtn) {
-    playPauseBtn.addEventListener('click', function() {
+    playPauseBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
       if (mainVideo.paused) {
         mainVideo.play();
         this.innerHTML = '<i class="bi bi-pause-fill"></i>';
@@ -1587,7 +1828,8 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   if (mainVideo && fullscreenBtn) {
-    fullscreenBtn.addEventListener('click', function() {
+    fullscreenBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
       if (mainVideo.requestFullscreen) {
         mainVideo.requestFullscreen();
       } else if (mainVideo.webkitRequestFullscreen) {
@@ -1598,15 +1840,19 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  // Auto-resize comment textareas
+  // Auto-resize all textareas
   const textareas = document.querySelectorAll('textarea');
   textareas.forEach(textarea => {
     textarea.addEventListener('input', function() {
       autoResize(this);
     });
+    // Initial resize
+    autoResize(textarea);
   });
-  
-  // Intersection Observer for animations
+}
+
+function initializeAnimations() {
+  // Enhanced intersection observer for animations
   const observerOptions = {
     threshold: 0.1,
     rootMargin: '50px'
@@ -1617,73 +1863,77 @@ document.addEventListener('DOMContentLoaded', function() {
       if (entry.isIntersecting) {
         entry.target.style.opacity = '1';
         entry.target.style.transform = 'translateY(0) scale(1)';
+        
+        // Add sequential animation for media cards
+        if (entry.target.classList.contains('media-card')) {
+          const delay = Array.from(entry.target.parentNode.children).indexOf(entry.target) * 100;
+          entry.target.style.animationDelay = `${delay}ms`;
+        }
       }
     });
   }, observerOptions);
   
   // Observe all animated elements
-  document.querySelectorAll('.animate-fade-in, .animate-slide-up, .animate-scale-in').forEach(el => {
+  document.querySelectorAll('.animate-fade-in, .animate-slide-up, .animate-scale-in, .media-card').forEach(el => {
     el.style.opacity = '0';
-    el.style.transform = 'translateY(20px) scale(0.95)';
-    el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    el.style.transform = 'translateY(30px) scale(0.95)';
+    el.style.transition = 'opacity 0.8s ease, transform 0.8s ease, box-shadow 0.3s ease';
     observer.observe(el);
   });
   
-  // Hide floating actions on scroll
+  // Hide floating actions on scroll with enhanced behavior
   let lastScrollTop = 0;
   const floatingActions = document.querySelector('.floating-actions');
+  const scrollThreshold = 100;
   
   if (floatingActions) {
     window.addEventListener('scroll', function() {
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollDelta = scrollTop - lastScrollTop;
       
-      if (scrollTop > lastScrollTop && scrollTop > 100) {
-        // Scrolling down
-        floatingActions.style.transform = 'translateY(100px)';
-        floatingActions.style.opacity = '0';
-      } else {
-        // Scrolling up
-        floatingActions.style.transform = 'translateY(0)';
-        floatingActions.style.opacity = '1';
+      if (Math.abs(scrollDelta) > 5) { // Only trigger on significant scroll
+        if (scrollTop > lastScrollTop && scrollTop > scrollThreshold) {
+          // Scrolling down
+          floatingActions.style.transform = 'translateY(120px)';
+          floatingActions.style.opacity = '0';
+        } else {
+          // Scrolling up
+          floatingActions.style.transform = 'translateY(0)';
+          floatingActions.style.opacity = '1';
+        }
       }
       
       lastScrollTop = scrollTop;
     }, { passive: true });
   }
+}
+
+// Touch gesture support for mobile
+let touchStartX = 0;
+let touchEndX = 0;
+
+document.addEventListener('touchstart', e => {
+  touchStartX = e.changedTouches[0].screenX;
 });
 
-// Social sharing with video support
-function shareOnPlatform(platform, hasVideo = false) {
-  const url = encodeURIComponent(window.location.href);
-  const title = encodeURIComponent('{{ $article->title }}');
-  const description = encodeURIComponent('{{ Str::limit(strip_tags($article->content), 150) }}');
+document.addEventListener('touchend', e => {
+  touchEndX = e.changedTouches[0].screenX;
+  handleSwipe();
+});
+
+function handleSwipe() {
+  const lightbox = document.getElementById('lightbox');
+  if (!lightbox.classList.contains('active')) return;
   
-  let shareUrl = '';
+  const swipeThreshold = 50;
+  const swipeDistance = touchEndX - touchStartX;
   
-  switch(platform) {
-    case 'facebook':
-      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
-      break;
-    case 'twitter':
-      shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${title}`;
-      break;
-    case 'whatsapp':
-      if (hasVideo) {
-        shareUrl = `https://wa.me/?text=${title}%0A%0A🎥 Vidéo disponible : ${url}`;
-      } else {
-        shareUrl = `https://wa.me/?text=${title}%0A%0A${url}`;
-      }
-      break;
-    case 'telegram':
-      shareUrl = `https://t.me/share/url?url=${url}&text=${title}`;
-      break;
-    case 'linkedin':
-      shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${url}`;
-      break;
-  }
-  
-  if (shareUrl) {
-    window.open(shareUrl, '_blank', 'width=600,height=400');
+  if (Math.abs(swipeDistance) > swipeThreshold) {
+    if (swipeDistance > 0) {
+      navigateLightbox(-1); // Swipe right - previous
+    } else {
+      navigateLightbox(1); // Swipe left - next
+    }
   }
 }
 </script>
