@@ -161,23 +161,47 @@
 
     .navbar-brand {
       font-weight: 800;
-      font-size: 1.6rem;
-      background: linear-gradient(45deg, var(--accent-color), var(--accent-light));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      font-size: 1.8rem;
       transition: var(--transition);
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.3rem;
+      text-decoration: none !important;
+    }
+
+    .brand-flash {
+      color: #3b82f6 !important;
+      animation: glow-blue 2s ease-in-out infinite alternate;
+    }
+
+    .brand-post {
+      color: #f97316 !important;
+      animation: glow-orange 2s ease-in-out infinite alternate 0.3s;
+    }
+
+    @keyframes glow-blue {
+      from { text-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
+      to { text-shadow: 0 0 15px rgba(59, 130, 246, 0.8), 0 0 20px rgba(59, 130, 246, 0.6); }
+    }
+
+    @keyframes glow-orange {
+      from { text-shadow: 0 0 5px rgba(249, 115, 22, 0.5); }
+      to { text-shadow: 0 0 15px rgba(249, 115, 22, 0.8), 0 0 20px rgba(249, 115, 22, 0.6); }
+    }
+
+    .navbar-brand:hover .brand-flash,
+    .navbar-brand:hover .brand-post {
+      transform: translateY(-2px);
     }
 
     .navbar-brand img {
-      height: 36px;
+      height: 40px;
       width: auto;
+      transition: var(--transition);
     }
 
-    .navbar-brand:hover {
-      transform: translateY(-2px);
+    .navbar-brand:hover img {
+      transform: rotate(-5deg) scale(1.1);
     }
 
     .nav-link {
@@ -284,6 +308,7 @@
       transition: var(--transition);
       overflow: hidden;
       background: white;
+      animation: fadeIn 0.6s ease;
     }
 
     .card:hover {
@@ -407,11 +432,19 @@
       transition: var(--transition);
       color: white;
       font-size: 1.2rem;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      60% { transform: translateY(-5px); }
     }
 
     #toTop:hover {
       transform: translateY(-5px) scale(1.1);
       box-shadow: var(--shadow-lg);
+      animation: none;
     }
 
     .dropdown-menu-notifs {
@@ -425,6 +458,18 @@
       border-radius: 12px;
       box-shadow: var(--shadow-sm);
       border-left: 4px solid;
+      animation: slideInDown 0.5s ease;
+    }
+
+    @keyframes slideInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .alert-success {
@@ -530,6 +575,18 @@
       border-radius: 16px;
       overflow: hidden;
       box-shadow: var(--shadow-lg);
+      animation: modalAppear 0.4s ease;
+    }
+
+    @keyframes modalAppear {
+      from {
+        opacity: 0;
+        transform: scale(0.8) translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
     }
 
     .modal-header {
@@ -566,11 +623,11 @@
       }
 
       .navbar-brand {
-        font-size: 1.4rem;
+        font-size: 1.5rem;
       }
 
       .navbar-brand img {
-        height: 32px;
+        height: 35px;
       }
 
       .nav-link {
@@ -630,6 +687,10 @@
 
       .card {
         margin-bottom: 1.5rem;
+      }
+      
+      .navbar-brand {
+        font-size: 1.4rem;
       }
     }
 
@@ -737,6 +798,15 @@
       .badge-notif {
         animation: none;
       }
+      
+      #toTop {
+        animation: none;
+      }
+      
+      .brand-flash,
+      .brand-post {
+        animation: none;
+      }
     }
   </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -755,7 +825,7 @@
   <div class="container">
     <a class="navbar-brand fw-bold" href="{{ route('articles.index') }}">
       <img src="{{ asset('flashpost.png') }}" alt="FlashPost Logo">
-      <span style="color: #3b82f6">Flash</span><span style="color: #f97316">Post</span>
+      <span class="brand-flash">Flash</span><span class="brand-post">Post</span>
     </a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
@@ -900,7 +970,9 @@
   <div class="container">
     <div class="row">
       <div class="col-lg-4 col-md-6 mb-4">
-        <h4 class="fw-bold text-gradient"><span class="text-primary">Flash</span><span class="text-accent">Post</span></span></h4>
+        <h4 class="fw-bold">
+          <span class="brand-flash">Flash</span><span class="brand-post">Post</span>
+        </h4>
         <p class="mt-3 text-light">Plateforme de publication et de divertissement. Partagez vos idées, découvrez du contenu et connectez-vous avec votre audience.</p>
         <div class="social-links mt-4">
           <a href="#"><i class="fab fa-facebook-f"></i></a>
@@ -978,7 +1050,7 @@
     </div>
     
     <div class="footer-bottom text-center">
-      <p class="mb-0 text-light">&copy; {{ date('Y') }} {{ $settings->company_name ?? 'DGLINK' }} — {{ config('app.name', $settings->site_name ?? 'FlashPost') }}. Tous droits réservés.</p>
+      <p class="mb-0 text-light">&copy; {{ date('Y') }} {{ $settings->company_name ?? 'DGLINK' }} — <span class="brand-flash">Flash</span><span class="brand-post">Post</span>. Tous droits réservés.</p>
     </div>
   </div>
 </footer>
@@ -1001,6 +1073,16 @@
     }
 
     init() {
+      // Show loading on initial page load
+      this.show();
+      
+      // Hide when page is fully loaded
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          this.hide();
+        }, 500);
+      });
+
       // Intercept all navigation links
       document.addEventListener('click', (e) => {
         const link = e.target.closest('a');
@@ -1020,11 +1102,6 @@
         if (this.shouldShowLoading(e.target)) {
           this.show();
         }
-      });
-
-      // Hide loading when page is fully loaded
-      window.addEventListener('load', () => {
-        this.hide();
       });
 
       // Hide loading when going back/forward
