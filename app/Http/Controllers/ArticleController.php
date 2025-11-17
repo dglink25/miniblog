@@ -41,7 +41,7 @@ class ArticleController extends Controller{
             ->where('status', 'validated')
             ->orderByDesc('pinned')
             ->latest('published_at')
-            ->take(12) // Chargement initial
+            ->take(100) // Chargement initial
             ->get();
 
         // Incrémenter le compteur de vues pour les articles
