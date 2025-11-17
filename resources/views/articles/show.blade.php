@@ -10,11 +10,13 @@
                     @include('articles.partials.favorite_button', ['article' => $article])
                 @endauth
                 
+                {{-- Share Floating Button --}}
                 <button class="btn btn-primary btn-lg shadow-lg hover-scale share-floating-btn" 
-                        onclick="openShareModal()">
+                        data-bs-toggle="modal" data-bs-target="#shareModal">
                     <i class="bi bi-share-fill"></i>
                 </button>
                 
+                {{-- Scroll to Top Button --}}
                 <button class="btn btn-accent btn-lg shadow-lg hover-scale scroll-top-btn" 
                         onclick="scrollToTop()">
                     <i class="bi bi-arrow-up"></i>
@@ -39,10 +41,17 @@
                         <div class="d-flex align-items-center flex-wrap gap-3">
                             <div class="d-flex align-items-center">
                                 <div class="avatar-lg me-3">
-                                    <div class="avatar-placeholder bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" 
-                                         style="width: 60px; height: 60px;">
-                                        {{ Str::substr($article->user->name, 0, 1) }}
-                                    </div>
+                                    @if($article->user->profile_picture)
+                                        <img src="{{ $article->user->profile_picture }}" 
+                                             class="rounded-circle"
+                                             alt="{{ $article->user->name }}"
+                                             style="width: 60px; height: 60px; object-fit: cover;">
+                                    @else
+                                        <div class="avatar-placeholder bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold" 
+                                             style="width: 60px; height: 60px;">
+                                            {{ Str::substr($article->user->name, 0, 1) }}
+                                        </div>
+                                    @endif
                                 </div>
                                 <div>
                                     <div class="fw-bold h5 mb-1">
@@ -67,18 +76,18 @@
                             <div class="d-flex align-items-center gap-2">
                                 @auth
                                     @if(auth()->id() !== $article->user->id)
-                                        @if(auth()->user()->following?->contains($article->user->id))
+                                        @if(auth()->user()->following->contains($article->user->id))
                                             <form method="POST" action="{{ route('users.unfollow', $article->user) }}" class="m-0">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button class="btn btn-outline-warning hover-lift">
+                                                <button type="submit" class="btn btn-outline-warning hover-lift">
                                                     <i class="bi bi-person-dash me-1"></i>Se désabonner
                                                 </button>
                                             </form>
                                         @else
                                             <form method="POST" action="{{ route('users.follow', $article->user) }}" class="m-0">
                                                 @csrf
-                                                <button class="btn btn-primary hover-lift">
+                                                <button type="submit" class="btn btn-primary hover-lift">
                                                     <i class="bi bi-person-plus me-1"></i>S'abonner
                                                 </button>
                                             </form>
@@ -97,7 +106,7 @@
                                   class="m-0">
                                 @csrf
                                 @method('DELETE')
-                                <button class="btn btn-outline-danger hover-lift">
+                                <button type="submit" class="btn btn-outline-danger hover-lift">
                                     <i class="bi bi-trash me-1"></i>Supprimer
                                 </button>
                             </form>
@@ -131,6 +140,28 @@
                         <span class="text-muted ms-1">/5 ({{ $article->ratings()->count() }})</span>
                     </div>
                 </div>
+
+                {{-- Quick Share Buttons --}}
+                <div class="quick-share-section mb-4">
+                    <div class="d-flex align-items-center flex-wrap gap-2">
+                        <span class="fw-bold text-muted me-2">Partager :</span>
+                        <button class="btn btn-sm btn-outline-primary hover-lift" onclick="quickShare('whatsapp')">
+                            <i class="fab fa-whatsapp me-1"></i>WhatsApp
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary hover-lift" onclick="quickShare('facebook')">
+                            <i class="fab fa-facebook me-1"></i>Facebook
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary hover-lift" onclick="quickShare('twitter')">
+                            <i class="fab fa-x-twitter me-1"></i>Twitter
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary hover-lift" onclick="quickShare('telegram')">
+                            <i class="fab fa-telegram me-1"></i>Telegram
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary hover-lift" onclick="copyToClipboard()">
+                            <i class="bi bi-link-45deg me-1"></i>Copier le lien
+                        </button>
+                    </div>
+                </div>
             </div>
 
             {{-- Main Article Media --}}
@@ -149,7 +180,7 @@
                 {{-- Video Player --}}
                 <div class="main-media-container mb-5 rounded-4 overflow-hidden shadow-lg animate-slide-up">
                     <div class="video-player-container">
-                        <video class="main-video-player" 
+                        <video class="main-video-player w-100" 
                                controls 
                                playsinline
                                poster="{{ $mainImage ?? asset('img/video-placeholder.jpg') }}"
@@ -157,16 +188,6 @@
                             <source src="{{ $mainVideo->file_path }}" type="video/mp4">
                             Votre navigateur ne supporte pas la lecture vidéo.
                         </video>
-                        <div class="video-controls-overlay">
-                            <div class="control-buttons">
-                                <button class="btn btn-primary btn-lg control-btn play-pause-btn">
-                                    <i class="bi bi-play-fill"></i>
-                                </button>
-                                <button class="btn btn-primary btn-lg control-btn fullscreen-btn">
-                                    <i class="bi bi-arrows-fullscreen"></i>
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 </div>
             @elseif($mainImage)
@@ -174,7 +195,7 @@
                 <div class="main-media-container mb-5 rounded-4 overflow-hidden shadow-lg animate-slide-up">
                     <div class="image-ratio-container">
                         <img src="{{ $mainImage }}" 
-                             class="article-main-image cursor-zoom" 
+                             class="article-main-image w-100 cursor-zoom" 
                              alt="Image article {{ $article->title }}"
                              loading="eager"
                              onclick="openLightbox('{{ $mainImage }}', '{{ $article->title }}')">
@@ -299,11 +320,17 @@
 
                     {{-- Right Side Actions --}}
                     <div class="d-flex flex-wrap gap-2">
+                        {{-- Share Button --}}
+                        <button class="btn btn-primary hover-lift" data-bs-toggle="modal" data-bs-target="#shareModal">
+                            <i class="bi bi-share-fill me-2"></i>Partager
+                        </button>
+
                         {{-- Reaction Button --}}
                         @auth
                             <form action="{{ route('articles.react', $article) }}" method="POST" class="m-0">
                                 @csrf
                                 <button name="type" value="like" 
+                                        type="submit"
                                         class="btn btn-outline-primary hover-lift reaction-btn">
                                     <i class="bi bi-heart me-2"></i>
                                     {{ $article->reactions()->where('type','like')->count() }}
@@ -466,6 +493,13 @@
                                     @endfor
                                     <span class="ms-2 fw-bold fs-5">{{ $myRating->stars }}/5</span>
                                 </div>
+                                <form action="{{ route('articles.unrate', $article) }}" method="POST" class="m-0">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-outline-danger btn-sm hover-lift">
+                                        <i class="bi bi-x-circle me-1"></i>Retirer la note
+                                    </button>
+                                </form>
                             </div>
                         @endif
                     </form>
@@ -504,7 +538,7 @@
                                               placeholder="Partagez vos pensées sur cette publication..."
                                               oninput="autoResize(this)">{{ old('body') }}</textarea>
                                 </div>
-                                <button class="btn btn-primary btn-lg hover-lift">
+                                <button type="submit" class="btn btn-primary btn-lg hover-lift">
                                     <i class="bi bi-send-fill me-2"></i>Publier le commentaire
                                 </button>
                             </form>
@@ -535,10 +569,17 @@
                                 <div class="d-flex justify-content-between align-items-start mb-3">
                                     <div class="d-flex align-items-center">
                                         <div class="avatar-lg me-3">
-                                            <div class="avatar-placeholder bg-secondary bg-opacity-10 text-secondary rounded-circle d-flex align-items-center justify-content-center fw-bold" 
-                                                 style="width: 50px; height: 50px;">
-                                                {{ Str::substr($comment->user->name, 0, 1) }}
-                                            </div>
+                                            @if($comment->user->profile_picture)
+                                                <img src="{{ $comment->user->profile_picture }}" 
+                                                     class="rounded-circle"
+                                                     alt="{{ $comment->user->name }}"
+                                                     style="width: 50px; height: 50px; object-fit: cover;">
+                                            @else
+                                                <div class="avatar-placeholder bg-secondary bg-opacity-10 text-secondary rounded-circle d-flex align-items-center justify-content-center fw-bold" 
+                                                     style="width: 50px; height: 50px;">
+                                                    {{ Str::substr($comment->user->name, 0, 1) }}
+                                                </div>
+                                            @endif
                                         </div>
                                         <div class="flex-grow-1">
                                             <div class="fw-bold h5 mb-1">
@@ -610,7 +651,7 @@
                                             <form action="{{ route('comments.react', $comment) }}" method="POST" class="m-0">
                                                 @csrf
                                                 <input type="hidden" name="type" value="{{ $type }}">
-                                                <button class="btn btn-sm {{ $data['class'] }} hover-lift reaction-btn">
+                                                <button type="submit" class="btn btn-sm {{ $data['class'] }} hover-lift reaction-btn">
                                                     <i class="{{ $data['icon'] }} me-1"></i>
                                                     <span>{{ $comment->reactions->where('type', $type)->count() }}</span>
                                                 </button>
@@ -629,7 +670,7 @@
                                                           class="form-control focus-shadow" 
                                                           rows="2" 
                                                           placeholder="Répondre à {{ $comment->user->name }}..."></textarea>
-                                                <button class="btn btn-primary hover-lift">
+                                                <button type="submit" class="btn btn-primary hover-lift">
                                                     <i class="bi bi-reply-fill"></i>
                                                 </button>
                                             </div>
@@ -646,10 +687,17 @@
                                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                                         <div class="d-flex align-items-center">
                                                             <div class="avatar-sm me-2">
-                                                                <div class="avatar-placeholder bg-light text-muted rounded-circle d-flex align-items-center justify-content-center fw-bold" 
-                                                                     style="width: 35px; height: 35px; font-size: 0.8rem;">
-                                                                    {{ Str::substr($reply->user->name, 0, 1) }}
-                                                                </div>
+                                                                @if($reply->user->profile_picture)
+                                                                    <img src="{{ $reply->user->profile_picture }}" 
+                                                                         class="rounded-circle"
+                                                                         alt="{{ $reply->user->name }}"
+                                                                         style="width: 35px; height: 35px; object-fit: cover;">
+                                                                @else
+                                                                    <div class="avatar-placeholder bg-light text-muted rounded-circle d-flex align-items-center justify-content-center fw-bold" 
+                                                                         style="width: 35px; height: 35px; font-size: 0.8rem;">
+                                                                        {{ Str::substr($reply->user->name, 0, 1) }}
+                                                                    </div>
+                                                                @endif
                                                             </div>
                                                             <div>
                                                                 <div class="fw-bold">
@@ -804,6 +852,20 @@
     transform: scale(1.1);
     box-shadow: 0 0 30px rgba(67, 97, 238, 0.6);
   }
+}
+
+/* ===== QUICK SHARE SECTION ===== */
+.quick-share-section {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  padding: 1rem 1.5rem;
+  border-radius: 16px;
+  border: 1px solid rgba(67, 97, 238, 0.1);
+}
+
+.quick-share-section .btn {
+  border-radius: 25px;
+  font-weight: 500;
+  transition: var(--transition);
 }
 
 /* ===== TYPOGRAPHY ===== */
@@ -1279,6 +1341,15 @@
     width: 45px;
     height: 45px;
   }
+  
+  .quick-share-section {
+    padding: 0.75rem 1rem;
+  }
+  
+  .quick-share-section .btn {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
 }
 
 @media (max-width: 576px) {
@@ -1330,6 +1401,12 @@
     width: 45px;
     height: 45px;
     font-size: 1.2rem;
+  }
+  
+  .quick-share-section .btn {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+    margin-bottom: 0.5rem;
   }
 }
 
@@ -1473,7 +1550,7 @@ html {
 }
 
 /* Loading animation for images */
-.enhanced-media-item {
+.enhanced-media-item:not([src]) {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: loading 1.5s infinite;
@@ -1491,36 +1568,63 @@ html {
 .enhanced-media-item[src] {
   animation: none;
 }
+
+/* Star rating enhancements */
+.star-rating {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.star-btn {
+  transition: var(--transition);
+  border: none;
+  background: none;
+}
+
+.star-btn:hover {
+  transform: scale(1.2);
+}
+
+.user-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
 </style>
 
 <script>
 // ===== SHARE DATA =====
 const shareData = {
     url: '{{ $articleUrl }}',
-    title: '{{ $articleTitle }}',
-    description: '{{ $articleDescription }}',
+    title: '{{ addslashes($articleTitle) }}',
+    description: '{{ addslashes($articleDescription) }}',
     image: '{{ $articleImage }}',
     hasVideo: {{ $hasVideo ? 'true' : 'false' }},
     videoUrl: '{{ $mainVideo ? $mainVideo->file_path : '' }}'
 };
 
 // ===== ENHANCED SHARE FUNCTIONALITY =====
-function openShareModal() {
-    const shareModal = new bootstrap.Modal(document.getElementById('shareModal'));
-    shareModal.show();
+function quickShare(platform) {
+    switch(platform) {
+        case 'whatsapp':
+            shareOnWhatsApp();
+            break;
+        case 'facebook':
+            shareOnFacebook();
+            break;
+        case 'twitter':
+            shareOnTwitter();
+            break;
+        case 'telegram':
+            shareOnTelegram();
+            break;
+        default:
+            break;
+    }
 }
 
 function shareOnWhatsApp() {
-    const message = `📢 *${shareData.title}*
-
-${shareData.description}
-
-${shareData.hasVideo ? '🎥 Vidéo incluse - ' : '📷 '}Découvrez cette publication sur FlashPost!
-
-🔗 ${shareData.url}
-
-_Partagé via FlashPost_`;
-
+    const message = `📢 *${shareData.title}*\n\n${shareData.description}\n\n${shareData.hasVideo ? '🎥 Vidéo incluse - ' : '📷 '}Découvrez cette publication sur FlashPost!\n\n🔗 ${shareData.url}\n\n_Partagé via FlashPost_`;
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank', 'width=600,height=400');
     trackShare('whatsapp');
@@ -1528,8 +1632,7 @@ _Partagé via FlashPost_`;
 
 function shareOnFacebook() {
     const encodedUrl = encodeURIComponent(shareData.url);
-    const encodedTitle = encodeURIComponent(shareData.title);
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedTitle}`, '_blank', 'width=600,height=400');
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, '_blank', 'width=600,height=400');
     trackShare('facebook');
 }
 
@@ -1556,18 +1659,25 @@ function shareOnLinkedIn() {
 function copyToClipboard() {
     navigator.clipboard.writeText(shareData.url).then(() => {
         const copyBtn = document.querySelector('.copy-link-btn');
-        const originalHTML = copyBtn.innerHTML;
+        const originalHTML = copyBtn ? copyBtn.innerHTML : '';
         
-        copyBtn.innerHTML = '<i class="fas fa-check fa-2x mb-2"></i><span class="d-block fw-bold">Lien copié!</span><small class="opacity-75">Coller où vous voulez</small>';
-        copyBtn.classList.add('copied');
+        if (copyBtn) {
+            copyBtn.innerHTML = '<i class="fas fa-check fa-2x mb-2"></i><span class="d-block fw-bold">Lien copié!</span><small class="opacity-75">Coller où vous voulez</small>';
+            copyBtn.classList.add('copied');
+        }
         
         // Show success toast
-        const toast = new bootstrap.Toast(document.getElementById('successToast'));
-        toast.show();
+        const toastElement = document.getElementById('successToast');
+        if (toastElement) {
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+        }
         
         setTimeout(() => {
-            copyBtn.innerHTML = originalHTML;
-            copyBtn.classList.remove('copied');
+            if (copyBtn) {
+                copyBtn.innerHTML = originalHTML;
+                copyBtn.classList.remove('copied');
+            }
         }, 3000);
     }).catch(err => {
         console.error('Failed to copy: ', err);
@@ -1596,11 +1706,10 @@ function openLightbox(imageSrc, caption) {
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightboxImage');
     const captionText = document.getElementById('lightboxCaption');
-    const counter = document.getElementById('lightboxCounter');
     
     // Collect all clickable images from enhanced media gallery
     lightboxImages = Array.from(document.querySelectorAll('.enhanced-media-item[src]'));
-    currentLightboxIndex = lightboxImages.findIndex(img => img.src.includes(imageSrc));
+    currentLightboxIndex = lightboxImages.findIndex(img => img.src.includes(imageSrc.split('/').pop()));
     
     if (currentLightboxIndex === -1) {
         currentLightboxIndex = 0;
@@ -1673,7 +1782,9 @@ function navigateLightbox(direction) {
 
 function updateLightboxCounter() {
     const counter = document.getElementById('lightboxCounter');
-    counter.textContent = `${currentLightboxIndex + 1}/${lightboxImages.length}`;
+    if (counter && lightboxImages.length > 0) {
+        counter.textContent = `${currentLightboxIndex + 1}/${lightboxImages.length}`;
+    }
 }
 
 function downloadMedia() {
@@ -1681,7 +1792,9 @@ function downloadMedia() {
     const link = document.createElement('a');
     link.href = lightboxImg.src;
     link.download = 'flashpost-image.jpg';
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
 }
 
 function shareMedia() {
@@ -1693,7 +1806,8 @@ function shareMedia() {
         })
         .catch(console.error);
     } else {
-        openShareModal();
+        const shareModal = new bootstrap.Modal(document.getElementById('shareModal'));
+        shareModal.show();
     }
 }
 
@@ -1748,7 +1862,8 @@ function shareVideo() {
         })
         .catch(console.error);
     } else {
-        openShareModal();
+        const shareModal = new bootstrap.Modal(document.getElementById('shareModal'));
+        shareModal.show();
     }
 }
 
@@ -1782,7 +1897,9 @@ function scrollToTop() {
 
 function scrollToComments() {
     const commentsSection = document.querySelector('.comments-section');
-    commentsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (commentsSection) {
+        commentsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 }
 
 // ===== AUTO-RESIZE TEXTAREA =====
@@ -1813,14 +1930,20 @@ function initializeEnhancedMedia() {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 const img = entry.target;
-                img.src = img.dataset.src || img.src;
-                img.classList.remove('lazy');
+                if (img.dataset.src) {
+                    img.src = img.dataset.src;
+                    img.classList.remove('lazy');
+                }
                 imageObserver.unobserve(img);
             }
         });
     });
 
-    lazyImages.forEach(img => imageObserver.observe(img));
+    lazyImages.forEach(img => {
+        if (img.dataset.src) {
+            imageObserver.observe(img);
+        }
+    });
 }
 
 function initializeEventListeners() {
@@ -1837,37 +1960,6 @@ function initializeEventListeners() {
             closeVideoLightbox();
         }
     });
-    
-    // Video controls for main video
-    const mainVideo = document.querySelector('.main-video-player');
-    const playPauseBtn = document.querySelector('.play-pause-btn');
-    const fullscreenBtn = document.querySelector('.fullscreen-btn');
-    
-    if (mainVideo && playPauseBtn) {
-        playPauseBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            if (mainVideo.paused) {
-                mainVideo.play();
-                this.innerHTML = '<i class="bi bi-pause-fill"></i>';
-            } else {
-                mainVideo.pause();
-                this.innerHTML = '<i class="bi bi-play-fill"></i>';
-            }
-        });
-    }
-    
-    if (mainVideo && fullscreenBtn) {
-        fullscreenBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            if (mainVideo.requestFullscreen) {
-                mainVideo.requestFullscreen();
-            } else if (mainVideo.webkitRequestFullscreen) {
-                mainVideo.webkitRequestFullscreen();
-            } else if (mainVideo.msRequestFullscreen) {
-                mainVideo.msRequestFullscreen();
-            }
-        });
-    }
     
     // Auto-resize all textareas
     const textareas = document.querySelectorAll('textarea');
@@ -1952,7 +2044,7 @@ document.addEventListener('touchend', e => {
 
 function handleSwipe() {
     const lightbox = document.getElementById('lightbox');
-    if (!lightbox.classList.contains('active')) return;
+    if (!lightbox || !lightbox.classList.contains('active')) return;
     
     const swipeThreshold = 50;
     const swipeDistance = touchEndX - touchStartX;
