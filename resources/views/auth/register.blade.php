@@ -386,6 +386,12 @@
             border-left: 4px solid var(--success-color);
         }
 
+        .alert-danger {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border-left: 4px solid #dc3545;
+        }
+
         /* Liens */
         .link-primary {
             color: var(--primary-color);
@@ -816,14 +822,22 @@
                     </p>
                 </div>
 
-                <!-- Simulated session status -->
-                <div class="alert alert-success alert-dismissible fade show" role="alert" style="display: none;">
+                <!-- Messages d'alerte -->
+                <div class="alert alert-success alert-dismissible fade show" role="alert" style="display: none;" id="success-alert">
                     <i class="fas fa-check-circle me-2"></i>
-                    <span id="status-message"></span>
+                    <span id="success-message"></span>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
 
-                <form method="POST" action="#" id="registerForm">
+                <div class="alert alert-danger alert-dismissible fade show" role="alert" style="display: none;" id="error-alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="error-message"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <form method="POST" action="{{ route('register') }}" id="registerForm">
+                    @csrf <!-- Token CSRF pour Laravel -->
+                    
                     <!-- Champ Nom complet -->
                     <div class="mb-3">
                         <label for="name" class="form-label">Nom complet</label>
@@ -832,7 +846,7 @@
                                 <i class="fas fa-user"></i>
                             </span>
                             <input type="text" id="name" name="name" class="form-control" 
-                                   value="" required autofocus 
+                                   value="{{ old('name') }}" required autofocus 
                                    placeholder="Votre nom complet">
                         </div>
                         <small class="text-danger mt-1 d-block error-message" id="name-error" style="display: none;">
@@ -848,7 +862,7 @@
                                 <i class="fas fa-envelope"></i>
                             </span>
                             <input type="email" id="email" name="email" class="form-control" 
-                                   value="" required 
+                                   value="{{ old('email') }}" required 
                                    placeholder="votre@email.com">
                         </div>
                         <small class="text-danger mt-1 d-block error-message" id="email-error" style="display: none;">
@@ -896,11 +910,14 @@
                     <!-- Case à cocher "Conditions d'utilisation" -->
                     <div class="mb-4">
                         <div class="form-check">
-                            <input type="checkbox" id="terms" name="terms" class="form-check-input">
+                            <input type="checkbox" id="terms" name="terms" class="form-check-input" required>
                             <label class="form-check-label" for="terms">
                                 J'accepte les <a href="#" class="link-primary">conditions d'utilisation</a>
                             </label>
                         </div>
+                        <small class="text-danger mt-1 d-block error-message" id="terms-error" style="display: none;">
+                            <i class="fas fa-exclamation-circle me-1"></i>
+                        </small>
                     </div>
 
                     <!-- Bouton d'inscription et liens -->
@@ -938,15 +955,23 @@
             const strengthBar = document.getElementById('strengthBar');
             const strengthText = document.getElementById('strengthText');
             const confirmPasswordInput = document.getElementById('password_confirmation');
+            const successAlert = document.getElementById('success-alert');
+            const errorAlert = document.getElementById('error-alert');
+
+            let formSubmitted = false;
 
             // Gestion de la soumission du formulaire
             registerForm.addEventListener('submit', function(e) {
+                // Si le formulaire a déjà été validé, on laisse passer
+                if (formSubmitted) {
+                    return true;
+                }
+                
                 e.preventDefault();
                 
                 // Reset errors
-                document.querySelectorAll('.error-message').forEach(el => {
-                    el.style.display = 'none';
-                });
+                hideAllErrors();
+                hideAlerts();
                 
                 // Validate form
                 const name = document.getElementById('name').value;
@@ -957,31 +982,39 @@
                 let isValid = true;
                 
                 if (!name) {
-                    document.getElementById('name-error').textContent = 'Le nom complet est requis';
-                    document.getElementById('name-error').style.display = 'block';
+                    showError('name-error', 'Le nom complet est requis');
+                    isValid = false;
+                } else if (name.length < 2) {
+                    showError('name-error', 'Le nom doit contenir au moins 2 caractères');
                     isValid = false;
                 }
                 
                 if (!email) {
-                    document.getElementById('email-error').textContent = 'L\'adresse email est requise';
-                    document.getElementById('email-error').style.display = 'block';
+                    showError('email-error', 'L\'adresse email est requise');
+                    isValid = false;
+                } else if (!isValidEmail(email)) {
+                    showError('email-error', 'Veuillez entrer une adresse email valide');
                     isValid = false;
                 }
                 
                 if (!password) {
-                    document.getElementById('password-error').textContent = 'Le mot de passe est requis';
-                    document.getElementById('password-error').style.display = 'block';
+                    showError('password-error', 'Le mot de passe est requis');
+                    isValid = false;
+                } else if (password.length < 8) {
+                    showError('password-error', 'Le mot de passe doit contenir au moins 8 caractères');
                     isValid = false;
                 }
                 
-                if (password !== passwordConfirmation) {
-                    document.getElementById('password-confirmation-error').textContent = 'Les mots de passe ne correspondent pas';
-                    document.getElementById('password-confirmation-error').style.display = 'block';
+                if (!passwordConfirmation) {
+                    showError('password-confirmation-error', 'Veuillez confirmer votre mot de passe');
+                    isValid = false;
+                } else if (password !== passwordConfirmation) {
+                    showError('password-confirmation-error', 'Les mots de passe ne correspondent pas');
                     isValid = false;
                 }
                 
                 if (!terms) {
-                    alert('Veuillez accepter les conditions d\'utilisation');
+                    showError('terms-error', 'Vous devez accepter les conditions d\'utilisation');
                     isValid = false;
                 }
                 
@@ -989,17 +1022,44 @@
                     registerBtn.classList.add('btn-loading');
                     registerBtn.disabled = true;
                     
-                    // Simulate API call
-                    setTimeout(() => {
-                        registerBtn.classList.remove('btn-loading');
-                        registerBtn.disabled = false;
-                        
-                        // Show success message
-                        document.querySelector('.alert').style.display = 'block';
-                        document.getElementById('status-message').textContent = 'Inscription réussie!';
-                    }, 1500);
+                    // Marquer comme validé et soumettre le formulaire normalement
+                    formSubmitted = true;
+                    registerForm.submit();
                 }
             });
+
+            // Fonction de validation d'email
+            function isValidEmail(email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            }
+
+            // Fonctions d'affichage des erreurs
+            function showError(elementId, message) {
+                const errorElement = document.getElementById(elementId);
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+                
+                // Animation de secousse
+                const inputElement = errorElement.closest('.mb-3, .mb-4').querySelector('.form-control, .form-check-input');
+                if (inputElement) {
+                    inputElement.style.animation = 'shake 0.5s ease-in-out';
+                    setTimeout(() => {
+                        inputElement.style.animation = '';
+                    }, 500);
+                }
+            }
+
+            function hideAllErrors() {
+                document.querySelectorAll('.error-message').forEach(el => {
+                    el.style.display = 'none';
+                });
+            }
+
+            function hideAlerts() {
+                successAlert.style.display = 'none';
+                errorAlert.style.display = 'none';
+            }
 
             // Basculer la visibilité du mot de passe
             passwordToggle.addEventListener('click', function() {
@@ -1106,13 +1166,17 @@
             // Initialiser les particules
             createParticles();
 
-            // Effet de vibration en cas d'erreur
-            setTimeout(() => {
-                registerForm.style.animation = 'shake 0.5s ease-in-out';
-                setTimeout(() => {
-                    registerForm.style.animation = '';
-                }, 500);
-            }, 500);
+            // Afficher les erreurs existantes du serveur (Laravel)
+            @if($errors->any())
+                @foreach($errors->all() as $error)
+                    showErrorAlert('{{ $error }}');
+                @endforeach
+            @endif
+
+            // Afficher les messages de statut
+            @if(session('status'))
+                showSuccess('{{ session('status') }}');
+            @endif
         });
 
         // Animation de secousse pour les erreurs

@@ -388,6 +388,12 @@
             border-left: 4px solid var(--success-color);
         }
 
+        .alert-danger {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border-left: 4px solid #dc3545;
+        }
+
         /* Liens */
         .link-primary {
             color: var(--primary-color);
@@ -791,14 +797,22 @@
                     </p>
                 </div>
 
-                <!-- Simulated session status -->
-                <div class="alert alert-success alert-dismissible fade show" role="alert" style="display: none;">
+                <!-- Messages d'alerte -->
+                <div class="alert alert-success alert-dismissible fade show" role="alert" style="display: none;" id="success-alert">
                     <i class="fas fa-check-circle me-2"></i>
-                    <span id="status-message"></span>
+                    <span id="success-message"></span>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
 
-                <form method="POST" action="#" id="loginForm">
+                <div class="alert alert-danger alert-dismissible fade show" role="alert" style="display: none;" id="error-alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="error-message"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <form method="POST" action="{{ route('login') }}" id="loginForm">
+                    @csrf <!-- Token CSRF pour Laravel -->
+                    
                     <!-- Champ Email -->
                     <div class="mb-3">
                         <label for="email" class="form-label">Adresse e-mail</label>
@@ -807,7 +821,7 @@
                                 <i class="fas fa-envelope"></i>
                             </span>
                             <input type="email" id="email" name="email" class="form-control" 
-                                   value="" required autofocus 
+                                   value="{{ old('email') }}" required autofocus 
                                    placeholder="votre@email.com">
                         </div>
                         <small class="text-danger mt-1 d-block error-message" id="email-error" style="display: none;">
@@ -845,7 +859,7 @@
 
                     <!-- Bouton de connexion et liens -->
                     <div class="d-flex justify-content-between align-items-center flex-wrap mb-4">
-                        <a href="{{ route('password.request') }}" class="link-primary small">
+                        <a href="{{ route('password.email') }}" class="link-primary small">
                             Mot de passe oublié ?
                         </a>
                         <button type="submit" class="btn btn-login" id="loginBtn">
@@ -875,48 +889,91 @@
             const loginBtn = document.getElementById('loginBtn');
             const passwordToggle = document.querySelector('.password-toggle');
             const passwordInput = document.getElementById('password');
+            const successAlert = document.getElementById('success-alert');
+            const errorAlert = document.getElementById('error-alert');
+
+            // Variable pour suivre si le formulaire est en cours de soumission
+            let isSubmitting = false;
 
             // Gestion de la soumission du formulaire
+            // Remplacer tout le code de soumission par :
             loginForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Reset errors
-                document.querySelectorAll('.error-message').forEach(el => {
-                    el.style.display = 'none';
-                });
-                
-                // Validate form
+                // Validation simple avant soumission
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
                 let isValid = true;
-                
-                if (!email) {
-                    document.getElementById('email-error').textContent = 'L\'adresse email est requise';
-                    document.getElementById('email-error').style.display = 'block';
+
+                if (!email || !isValidEmail(email)) {
+                    e.preventDefault();
+                    showError('email-error', 'Email invalide');
                     isValid = false;
                 }
-                
-                if (!password) {
-                    document.getElementById('password-error').textContent = 'Le mot de passe est requis';
-                    document.getElementById('password-error').style.display = 'block';
+
+                if (!password || password.length < 8) {
+                    e.preventDefault();
+                    showError('password-error', 'Mot de passe invalide');
                     isValid = false;
                 }
-                
+
                 if (isValid) {
                     loginBtn.classList.add('btn-loading');
                     loginBtn.disabled = true;
-                    
-                    // Simulate API call
-                    setTimeout(() => {
-                        loginBtn.classList.remove('btn-loading');
-                        loginBtn.disabled = false;
-                        
-                        // Show success message
-                        document.querySelector('.alert').style.display = 'block';
-                        document.getElementById('status-message').textContent = 'Connexion réussie!';
-                    }, 1500);
+                    // Le formulaire se soumet normalement, Laravel gère la redirection
                 }
             });
+
+            // Fonction de validation d'email
+            function isValidEmail(email) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                return emailRegex.test(email);
+            }
+
+            // Fonctions d'affichage des erreurs
+            function showError(elementId, message) {
+                const errorElement = document.getElementById(elementId);
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+                
+                // Animation de secousse
+                const inputElement = errorElement.closest('.mb-3, .mb-4').querySelector('.form-control');
+                inputElement.style.animation = 'shake 0.5s ease-in-out';
+                setTimeout(() => {
+                    inputElement.style.animation = '';
+                }, 500);
+            }
+
+            function hideAllErrors() {
+                document.querySelectorAll('.error-message').forEach(el => {
+                    el.style.display = 'none';
+                });
+            }
+
+            function handleValidationErrors(errors) {
+                for (const field in errors) {
+                    const errorElement = document.getElementById(`${field}-error`);
+                    if (errorElement) {
+                        showError(`${field}-error`, errors[field][0]);
+                    }
+                }
+            }
+
+            // Fonctions d'affichage des alertes
+            function showSuccess(message) {
+                document.getElementById('success-message').textContent = message;
+                successAlert.style.display = 'block';
+                errorAlert.style.display = 'none';
+            }
+
+            function showErrorAlert(message) {
+                document.getElementById('error-message').textContent = message;
+                errorAlert.style.display = 'block';
+                successAlert.style.display = 'none';
+            }
+
+            function hideAlerts() {
+                successAlert.style.display = 'none';
+                errorAlert.style.display = 'none';
+            }
 
             // Basculer la visibilité du mot de passe
             passwordToggle.addEventListener('click', function() {
@@ -977,13 +1034,17 @@
             // Initialiser les particules
             createParticles();
 
-            // Effet de vibration en cas d'erreur
-            setTimeout(() => {
-                loginForm.style.animation = 'shake 0.5s ease-in-out';
-                setTimeout(() => {
-                    loginForm.style.animation = '';
-                }, 500);
-            }, 500);
+            // Afficher les erreurs existantes du serveur (Laravel)
+            @if($errors->any())
+                @foreach($errors->all() as $error)
+                    showErrorAlert('{{ $error }}');
+                @endforeach
+            @endif
+
+            // Afficher les messages de statut
+            @if(session('status'))
+                showSuccess('{{ session('status') }}');
+            @endif
         });
 
         // Animation de secousse pour les erreurs

@@ -782,7 +782,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
 
-                <form method="POST" action="#" id="passwordResetForm">
+                <form method="POST" action="{{ route('password.email') }}" id="passwordResetForm">
                     <!-- Champ Email -->
                     <div class="mb-4">
                         <label for="email" class="form-label">Adresse e-mail</label>
